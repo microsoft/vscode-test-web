@@ -1,0 +1,80 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "pwa-node",
+            "request": "launch",
+            "name": "Launch sample test",
+			"outputCapture": "std",
+            "program": "${workspaceFolder}/sample/dist/web/test/runTest.js",
+			"args": ["--waitForDebugger=9229"],
+			"cascadeTerminateToConfigurations": ["Launch sample test"],
+			"presentation": {
+				"hidden": true,
+			}
+        },
+        {
+            "type": "pwa-chrome",
+            "request": "attach",
+            "name": "Attach sample test",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+			"port": 9229,
+			"timeout": 30000, // give it time to download vscode if needed
+			"resolveSourceMapLocations": [
+				"!**/vs/**", // exclude core vscode sources
+				"!**/static/build/extensions/**", // exclude built-in extensions
+			],
+			"webRoot": "${workspaceFolder}/sample", // only needed since sample is in a subdir
+			"presentation": {
+				"hidden": true,
+			}
+        },
+        {
+            "type": "pwa-node",
+            "request": "launch",
+            "name": "Run in Chromium",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}/out/index.js",
+            "args": [
+                "--browserType=chromium",
+                "--extensionDevelopmentPath=${workspaceFolder}/sample"
+            ],
+            "outFiles": [
+                "${workspaceFolder}/out/**/*.js"
+            ]
+        },
+        {
+            "type": "pwa-node",
+            "request": "launch",
+            "name": "Run Test in Chromium",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}/out/index.js",
+            "args": [
+                "--browserType=chromium",
+                "--extensionDevelopmentPath=${workspaceFolder}/sample",
+                "--extensionTestsPath=${workspaceFolder}/sample/dist/web/test/suite/index.js"
+            ],
+            "outFiles": [
+                "${workspaceFolder}/out/**/*.js"
+            ]
+        }
+    ],
+	"compounds": [
+		{
+			"name": "Debug Sample Test",
+			"configurations": [
+				"Launch sample test",
+                "Attach sample test"
+			]
+		}
+	]
+}

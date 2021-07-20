@@ -1,0 +1,16 @@
+.vscode
+.npmignore
+.editorconfig
+.eslintrc.js
+.prettierrc
+.github/
+src/
+sample/
+.vscode-test-web/
+tsconfig.json
+tslint.json
+
+**/*.js.map
+**/*.d.ts
+!out/index.d.ts
+*.tgz

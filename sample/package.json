@@ -1,0 +1,45 @@
+{
+	"name": "vscode-test-web-sample",
+	"displayName": "vscode-test-web-sample",
+	"description": "",
+	"version": "0.0.1",
+	"engines": {
+		"vscode": "^1.55.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"onCommand:vscode-test-web-sample.helloWorld"
+	],
+	"browser": "./dist/web/extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "vscode-test-web-sample.helloWorld",
+				"title": "Hello World"
+			}
+		]
+	},
+	"scripts": {
+		"test": "node ./dist/web/test/runTest.js",
+		"pretest": "npm run compile-web && tsc ./src/web/test/runTest.ts --outDir ./dist --rootDir ./src --target es6 --module commonjs",
+		"vscode:prepublish": "npm run package-web",
+		"compile-web": "webpack --config ./build/web-extension.webpack.config.js",
+		"watch-web": "webpack --watch --config ./build/web-extension.webpack.config.js",
+		"package-web": "webpack --mode production --devtool hidden-source-map --config ./build/web-extension.webpack.config.js"
+	},
+	"devDependencies": {
+		"@types/vscode": "^1.55.0",
+		"@types/mocha": "^8.2.2",
+		"@types/node": "^12.11.7",
+		"mocha": "^9.0.1",
+		"typescript": "^4.3.4",
+		"ts-loader": "^9.2.3",
+		"webpack": "^5.40.0",
+		"webpack-cli": "^4.7.2",
+		"@types/webpack-env": "^1.16.0",
+		"assert": "^2.0.0",
+		"process": "^0.11.10"
+	}
+}
