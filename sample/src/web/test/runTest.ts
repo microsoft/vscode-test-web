@@ -1,6 +1,7 @@
 import * as path from 'path';
 
-import { runTests } from '../../../../out';
+//import { runTests } from '@vscode/test-web';
+import { runTests } from '../../../..';
 
 async function main() {
 	try {
