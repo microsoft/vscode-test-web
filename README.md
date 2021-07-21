@@ -66,6 +66,9 @@ Corrsponding options are available in the API.
 - Make necessary changes in [`src`](./src)
 - `yarn compile` (or `yarn watch`)
 
+- run `yarn sample` to launch VS Code Browser with the `sample` extension bundled in this repo.
+
+- run `yarn sample-test` to launch VS Code Browser running the extension tests of the  `sample` extension bundled in this repo.
 
 
 ## License
