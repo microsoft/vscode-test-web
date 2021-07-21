@@ -1,6 +1,6 @@
 # @vscode/test-web
 
-<!-- ![Test Status Badge](https://github.com/microsoft/vscode-test-web/workflows/Tests/badge.svg) -->
+![Test Status Badge](https://github.com/microsoft/vscode-test-web/workflows/Tests/badge.svg)
 
 This module helps testing VS Code web extensions locally.
 
