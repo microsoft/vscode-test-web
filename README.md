@@ -1,8 +1,11 @@
-# vscode-test-web
+# @vscode/test-web
 
 <!-- ![Test Status Badge](https://github.com/microsoft/vscode-test-web/workflows/Tests/badge.svg) -->
 
-This module helps testing VS Code web extensions.
+This module helps testing VS Code web extensions locally.
+
+The node module runs a local web server that serves VS Code Browser including the extensions located at the given local path. Additionally the extension tests are automatically run.
+
 
 ## Usage
 
