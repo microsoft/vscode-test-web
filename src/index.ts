@@ -162,7 +162,7 @@ function openInBrowser(options: BrowserOptions): Promise<boolean> {
 
 		const page = context.pages()[0] ?? await context.newPage();
 		if (options.waitForDebugger) {
-			await page.waitForFunction(() => '__jsDebugReady' in globalThis);
+			await page.waitForFunction(() => '__jsDebugIsReady' in globalThis);
 		}
 
 		await page.setViewportSize({ width, height });
