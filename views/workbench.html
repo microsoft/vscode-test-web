@@ -22,15 +22,21 @@
 		<!-- Workbench Icon/Manifest/CSS -->
 		<link rel="icon" href="{{WORKBENCH_WEB_BASE_URL}}/favicon.ico" type="image/x-icon" />
 		<link rel="manifest" href="{{WORKBENCH_WEB_BASE_URL}}/manifest.json">
+		<link data-name="vs/workbench/workbench.web.api" rel="stylesheet" href="{{WORKBENCH_WEB_BASE_URL}}/out/vs/workbench/workbench.web.api.css" />
 	</head>
 
 	<body aria-label="">
 	</body>
 
 	<!-- Startup (do not modify order of script tags!) -->
+	<script src="{{WORKBENCH_WEB_BASE_URL}}/out/vs/loader.js"></script>
+	<script src="{{WORKBENCH_WEB_BASE_URL}}/out/vs/webPackagePaths.js"></script>
 	<script>
 		let baseUrl = '{{WORKBENCH_WEB_BASE_URL}}';
-		self.require = {
+		Object.keys(self.webPackagePaths).map(function (key, index) {
+			self.webPackagePaths[key] = `${baseUrl}/node_modules/${key}/${self.webPackagePaths[key]}`;
+		});
+		require.config({
 			baseUrl: `${baseUrl}/out`,
 			recordStats: true,
 			trustedTypesPolicy: window.trustedTypes?.createPolicy('amdLoader', {
@@ -41,21 +47,9 @@
 					throw new Error(`Invalid script url: ${value}`)
 				}
 			}),
-			paths: {
-				'vscode-textmate': `${baseUrl}/node_modules/vscode-textmate/release/main`,
-				'vscode-oniguruma': `${baseUrl}/node_modules/vscode-oniguruma/release/main`,
-				'xterm': `${baseUrl}/node_modules/xterm/lib/xterm.js`,
-				'xterm-addon-search': `${baseUrl}/node_modules/xterm-addon-search/lib/xterm-addon-search.js`,
-				'xterm-addon-unicode11': `${baseUrl}/node_modules/xterm-addon-unicode11/lib/xterm-addon-unicode11.js`,
-				'xterm-addon-webgl': `${baseUrl}/node_modules/xterm-addon-webgl/lib/xterm-addon-webgl.js`,
-				'tas-client-umd': `${baseUrl}/node_modules/tas-client-umd/lib/tas-client-umd.js`,
-				'iconv-lite-umd': `${baseUrl}/node_modules/iconv-lite-umd/lib/iconv-lite-umd.js`,
-				'jschardet': `${baseUrl}/node_modules/jschardet/dist/jschardet.min.js`,
-			}
-		};
-
+			paths: self.webPackagePaths
+		});
 	</script>
-	<script src="{{WORKBENCH_WEB_BASE_URL}}/out/vs/loader.js"></script>
 	<script>
 		performance.mark('code/willLoadWorkbenchMain');
 	</script>
