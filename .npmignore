@@ -6,9 +6,14 @@
 .github/
 src/
 sample/
+fs-provider/src/
+fs-provider/node_modules/
+fs-provider/yarn.lock
+
 .vscode-test-web/
 tsconfig.json
 tslint.json
+webpack.config.js
 
 **/*.js.map
 **/*.d.ts

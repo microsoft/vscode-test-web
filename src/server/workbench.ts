@@ -11,6 +11,7 @@ import * as Router from '@koa/router';
 import { IConfig } from './main';
 import { scanForExtensions, URIComponents } from './extensions';
 import { fetch, fetchJSON } from './download';
+import { fsProviderExtensionPrefix } from './mounts';
 
 interface IDevelopmentOptions {
 	extensionTestsPath?: URIComponents;
@@ -42,7 +43,7 @@ class Workbench {
 			const workbenchTemplate = (await fs.readFile(path.resolve(__dirname, '../../views/workbench.html'))).toString();
 			return workbenchTemplate.replace(/\{\{([^}]+)\}\}/g, (_, key) => values[key] ?? 'undefined');
 		} catch (e) {
-			return e;
+			return String(e);
 		}
 	}
 
@@ -98,6 +99,12 @@ async function getWorkbenchOptions(
 	}
 	if (config.folderUri) {
 		options.folderUri = URI.parse(config.folderUri);
+	}
+	if (config.folderMountPath) {
+		if (!options.additionalBuiltinExtensions) {
+			options.additionalBuiltinExtensions = [];
+		}
+		options.additionalBuiltinExtensions.push({ scheme: ctx.protocol, authority: ctx.host, path: fsProviderExtensionPrefix })
 	}
 	return options;
 }
@@ -170,11 +177,14 @@ export default function (config: IConfig): Router.Middleware {
 		ctx.body = uri.toJSON();
 	});
 
-
 	router.get('/', async ctx => {
 		const options = await getWorkbenchOptions(ctx, config);
 		ctx.body = await ctx.state.workbench.render(options);
 	});
 
+	//mountAPI(config, router);
+
+
 	return router.routes();
 }
+

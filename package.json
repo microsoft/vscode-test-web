@@ -2,15 +2,17 @@
   "name": "@vscode/test-web",
   "version": "0.0.8",
   "scripts": {
-    "compile": "tsc -p ./",
+    "postinstall": "yarn --cwd=fs-provider && yarn --cwd=sample",
+    "compile": "tsc -p ./ && yarn compile-fs-provider",
     "watch": "tsc -w -p ./",
-    "prepublishOnly": "tsc -p ./",
+    "prepublishOnly": "yarn compile",
     "test": "eslint src --ext ts && tsc --noEmit",
     "preversion": "npm test",
     "postversion": "git push && git push --tags",
+    "compile-fs-provider": "yarn --cwd=fs-provider compile-web",
     "compile-sample": "yarn --cwd=sample compile-web",
-    "sample": "npm run compile && npm run compile-sample && node . --extensionDevelopmentPath=sample --browserType=chromium",
-    "sample-tests": "npm run compile &&  npm run compile-sample && node . --extensionDevelopmentPath=sample --extensionTestsPath=sample/dist/web/test/suite/index.js --browserType=chromium"
+    "sample": "npm run compile && npm run compile-sample && node . --extensionDevelopmentPath=sample --browserType=chromium sample/test-workspace",
+    "sample-tests": "npm run compile &&  npm run compile-sample && node . --extensionDevelopmentPath=sample --extensionTestsPath=sample/dist/web/test/suite/index.js --browserType=chromium --headless=false sample/test-workspace"
   },
   "main": "./out/index.js",
   "bin": {

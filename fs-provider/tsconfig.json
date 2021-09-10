@@ -1,10 +1,10 @@
 {
 	"compilerOptions": {
 		"module": "commonjs",
-		"target": "es6",
+		"target": "ES2019",
 		"outDir": "dist",
 		"lib": [
-			"es6", "WebWorker"
+			"es2019", "WebWorker"
 		],
 		"sourceMap": true,
 		"rootDir": "src",

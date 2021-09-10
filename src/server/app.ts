@@ -10,6 +10,7 @@ import * as kmount from 'koa-mount';
 import { IConfig } from './main';
 import workbench from './workbench';
 import * as path from 'path';
+import { configureMounts } from './mounts';
 
 export default async function createApp(config: IConfig): Promise<Koa> {
 	const app = new Koa();
@@ -38,7 +39,10 @@ export default async function createApp(config: IConfig): Promise<Koa> {
 		app.use(kmount('/static/build', kstatic(config.build.location)));
 	}
 
+	configureMounts(config, app);
+
 	app.use(workbench(config));
 
 	return app;
 }
+

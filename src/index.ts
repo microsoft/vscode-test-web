@@ -7,7 +7,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { IConfig, runServer, Static, Sources } from './server/main';
-import { downloadAndUnzipVSCode } from './server/download';
+import { downloadAndUnzipVSCode, directoryExists, fileExists } from './server/download';
 
 import * as playwright from 'playwright';
 import * as minimist from 'minimist';
@@ -72,6 +72,11 @@ export interface Options {
 	 * The folder URI to open VSCode on
 	 */
 	folderUri?: string;
+
+	/**
+	 * A local path containing the files found at folderUri.
+	 */
+	folderMountPath?: string;
 }
 
 /**
@@ -84,7 +89,8 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 		extensionDevelopmentPath: options.extensionDevelopmentPath,
 		extensionTestsPath: options.extensionTestsPath,
 		build: await getBuild(options.version),
-		folderUri: options.folderUri
+		folderUri: options.folderUri,
+		folderMountPath: options.folderMountPath
 	};
 
 	const port = 3000;
@@ -119,7 +125,8 @@ export async function open(options: Options): Promise<void> {
 	const config: IConfig = {
 		extensionDevelopmentPath: options.extensionDevelopmentPath,
 		build: await getBuild(options.version),
-		folderUri: options.folderUri
+		folderUri: options.folderUri,
+		folderMountPath: options.folderMountPath
 	};
 
 	const port = 3000;
@@ -184,23 +191,70 @@ function openInBrowser(options: BrowserOptions): Promise<boolean> {
 	});
 }
 
-function isStringOrUndefined(value: unknown): value is string {
-	return value === undefined || (typeof value === 'string');
+function validateStringOrUndefined(options: CommandLineOptions, name: keyof CommandLineOptions): string | undefined {
+	const value = options[name];
+	if (value === undefined || (typeof value === 'string')) {
+		return value;
+	}
+	console.log(`'${name}' needs to be a string value.`);
+	showHelp();
+	process.exit(-1);
 }
 
-function isBooleanOrUndefined(value: unknown): value is string {
-	return value === undefined || (typeof value === 'boolean');
+
+async function validatePathOrUndefined(options: CommandLineOptions, name: keyof CommandLineOptions, isFile?: boolean): Promise<string | undefined> {
+	const loc = validateStringOrUndefined(options, name);
+	return loc && validatePath(loc, isFile);
 }
 
-function isBrowserType(browserType: unknown): browserType is BrowserType {
-	return (typeof browserType === 'string') && ['chromium', 'firefox', 'webkit'].includes(browserType);
+function validateBooleanOrUndefined(options: CommandLineOptions, name: keyof CommandLineOptions): boolean | undefined {
+	const value = options[name];
+	if (value === undefined || (typeof value === 'boolean')) {
+		return value;
+	}
+	console.log(`'${name}' needs to be a boolean value.`);
+	showHelp();
+	process.exit(-1);
 }
 
-function isValidVersion(version: unknown): version is VSCodeVersion {
-	return version === undefined || ((typeof version === 'string') && ['insiders', 'stable', 'sources'].includes(version));
+function valdiateBrowserType(browserType: unknown): BrowserType {
+	if (browserType === 'undefined') {
+		return 'chromium';
+	}
+	if ((typeof browserType === 'string') && ['chromium', 'firefox', 'webkit'].includes(browserType)) {
+		return browserType as BrowserType;
+	}
+	console.log(`Invalid browser type.`);
+	showHelp();
+	process.exit(-1);
 }
 
-function getPortNumber(port: unknown): number | undefined {
+async function validatePath(loc: string, isFile?: boolean): Promise<string | undefined> {
+	loc = path.resolve(loc);
+	if (isFile) {
+		if (!await fileExists(loc)) {
+			console.log(`'${loc}' must be an existing file.`);
+			process.exit(-1);
+		}
+	} else {
+		if (!await directoryExists(loc)) {
+			console.log(`'${loc}' must be an existing folder.`);
+			process.exit(-1);
+		}
+	}
+	return loc;
+}
+
+function validateVersion(version: unknown): VSCodeVersion | undefined {
+	if (version === undefined || ((typeof version === 'string') && ['insiders', 'stable', 'sources'].includes(version))) {
+		return version as VSCodeVersion;
+	}
+	console.log(`Invalid version.`);
+	showHelp();
+	process.exit(-1);
+}
+
+function validatePortNumber(port: unknown): number | undefined {
 	if (typeof port === 'string') {
 		const number = Number.parseInt(port);
 		if (!Number.isNaN(number) && number >= 0) {
@@ -218,46 +272,74 @@ interface CommandLineOptions {
 	type?: string;
 	'open-devtools'?: boolean;
 	headless?: boolean;
+	'folder-uri'?: string;
 }
 
-if (require.main === module) {
-	const options: minimist.Opts = { string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browserType', 'version', 'waitForDebugger', 'folder-uri'], boolean: ['open-devtools', 'headless'] };
+function showHelp() {
+	console.log('Usage:');
+	console.log(`  --browserType 'chromium' | 'firefox' | 'webkit': The browser to launch`)
+	console.log(`  --extensionDevelopmentPath path. [Optional]: A path pointing to a extension to include.`);
+	console.log(`  --extensionTestsPath path.  [Optional]: A path to a test module to run`);
+	console.log(`  --version. 'insiders' (Default) | 'stable' | 'sources' [Optional]`);
+	console.log(`  --open-devtools. Opens the dev tools  [Optional]`);
+	console.log(`  --headless. Whether to show the browser. Defaults to true when an extensionTestsPath is provided, otherwise false. [Optional]`);
+	console.log(`  folderPath. A local folder to open VS Code on. The folder content will be available as a virtual file system`);
+}
+
+async function cliMain(): Promise<void> {
+	const options: minimist.Opts = { string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browserType', 'version', 'waitForDebugger', 'folder-uri', 'mount'], boolean: ['open-devtools', 'headless'] };
 	const args = minimist<CommandLineOptions>(process.argv.slice(2), options);
 
-	const { browserType, extensionDevelopmentPath, extensionTestsPath, version, waitForDebugger, headless } = args;
-	const port = getPortNumber(waitForDebugger);
+	const browserType = valdiateBrowserType(args.browserType);
+	const version = validateVersion(args.version);
+	const extensionTestsPath = await validatePathOrUndefined(args, 'extensionTestsPath', true);
+	const extensionDevelopmentPath = await validatePathOrUndefined(args, 'extensionDevelopmentPath');
+	const headless = validateBooleanOrUndefined(args, 'headless');
+	const devTools = validateBooleanOrUndefined(args, 'open-devtools');
 
-	if (!isBrowserType(browserType) || !isStringOrUndefined(extensionDevelopmentPath) || !isStringOrUndefined(extensionTestsPath) || !isValidVersion(version) || !isStringOrUndefined(args['folder-uri']) || !isBooleanOrUndefined(args['open-devtools']) || !isBooleanOrUndefined(headless)) {
-		console.log('Usage:');
-		console.log(`  --browserType 'chromium' | 'firefox' | 'webkit': The browser to launch`)
-		console.log(`  --extensionDevelopmentPath path. [Optional]: A path pointing to a extension to include.`);
-		console.log(`  --extensionTestsPath path.  [Optional]: A path to a test module to run`);
-		console.log(`  --folder-uri.  [Optional]: The folder to open VS Code on`)
-		console.log(`  --version. 'insiders' (Default) | 'stable' | 'sources' [Optional]`);
-		console.log(`  --open-devtools. Opens the dev tools  [Optional]`);
-		console.log(`  --headless. Whether to show the browser. Defaults to true when an extensionTestsPath is provided, otherwise false. [Optional]`);
-		process.exit(-1);
+	const port = validatePortNumber(args.waitForDebugger);
+
+	let folderUri = validateStringOrUndefined(args, 'folder-uri');
+	let folderMountPath: string | undefined;
+
+	const inputs = args._;
+	if (inputs.length) {
+		const input = await validatePath(inputs[0]);
+		if (input) {
+			folderMountPath = input;
+			if (folderUri) {
+				console.log(`Local folder provided as input, ignoring 'folder-uri'`)
+			}
+			folderUri = `vscode-test-web://mount/`;
+		}
 	}
+
 	if (extensionTestsPath) {
 		runTests({
-			extensionTestsPath: extensionTestsPath && path.resolve(extensionTestsPath),
-			extensionDevelopmentPath: extensionDevelopmentPath && path.resolve(extensionDevelopmentPath),
+			extensionTestsPath,
+			extensionDevelopmentPath,
 			browserType,
 			version,
-			devTools: args['open-devtools'],
+			devTools,
 			waitForDebugger: port,
-			folderUri: args['folder-uri'],
+			folderUri,
+			folderMountPath,
 			headless
 		})
 	} else {
 		open({
-			extensionDevelopmentPath: extensionDevelopmentPath && path.resolve(extensionDevelopmentPath),
+			extensionDevelopmentPath,
 			browserType,
 			version,
-			devTools: args['open-devtools'],
+			devTools,
 			waitForDebugger: port,
-			folderUri: args['folder-uri'],
+			folderUri,
+			folderMountPath,
 			headless
 		})
 	}
+}
+
+if (require.main === module) {
+	cliMain();
 }

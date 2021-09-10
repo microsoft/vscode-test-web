@@ -11,6 +11,7 @@ export interface IConfig {
 	readonly extensionTestsPath?: string;
 	readonly build: Sources | Static | CDN;
 	readonly folderUri?: string;
+	readonly folderMountPath?: string;
 }
 
 export interface Sources {
