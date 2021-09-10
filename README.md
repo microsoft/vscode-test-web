@@ -66,6 +66,11 @@ The `folderPath` argument allows to work on existing files.
 VS Code for the browser will open an a virtual file system ('vscode-test-web://mount') where the files of the local folder will served.
 The file system is read/write, but modifications are stored in memory and not written back to disk.
 
+```sh
+vscode-test-web --browserType=chromium --extensionDevelopmentPath=$extensionLocation --extensionTestsPath=$extensionLocation/dist/web/test/suite/index.js $testWorkspaceFolder
+```
+
+
 ## Development
 
 - `yarn install`
