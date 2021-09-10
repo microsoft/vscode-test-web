@@ -69,14 +69,17 @@ export interface Options {
 	waitForDebugger?: number;
 
 	/**
-	 * The folder URI to open VSCode on
+	 * A local path to open VSCode on. VS Code for the browser will open an a virtual
+	 * file system ('vscode-test-web://mount') where the files of the local folder will served.
+	 * The file system is read/write, but modifications are stored in memory and not written back to disk.
 	 */
-	folderUri?: string;
+	folderPath?: string;
 
 	/**
-	 * A local path containing the files found at folderUri.
-	 */
-	folderMountPath?: string;
+	 * The folder URI to open VSCode on. If 'folderPath' is set this will be ignored and 'vscode-test-web://mount'
+	 * is used as folder URI instead.
+ 	 */
+	folderUri?: string;
 }
 
 /**
@@ -90,7 +93,7 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 		extensionTestsPath: options.extensionTestsPath,
 		build: await getBuild(options.version),
 		folderUri: options.folderUri,
-		folderMountPath: options.folderMountPath
+		folderMountPath: options.folderPath
 	};
 
 	const port = 3000;
@@ -126,7 +129,7 @@ export async function open(options: Options): Promise<void> {
 		extensionDevelopmentPath: options.extensionDevelopmentPath,
 		build: await getBuild(options.version),
 		folderUri: options.folderUri,
-		folderMountPath: options.folderMountPath
+		folderMountPath: options.folderPath
 	};
 
 	const port = 3000;
@@ -300,13 +303,13 @@ async function cliMain(): Promise<void> {
 	const port = validatePortNumber(args.waitForDebugger);
 
 	let folderUri = validateStringOrUndefined(args, 'folder-uri');
-	let folderMountPath: string | undefined;
+	let folderPath: string | undefined;
 
 	const inputs = args._;
 	if (inputs.length) {
 		const input = await validatePath(inputs[0]);
 		if (input) {
-			folderMountPath = input;
+			folderPath = input;
 			if (folderUri) {
 				console.log(`Local folder provided as input, ignoring 'folder-uri'`)
 			}
@@ -323,7 +326,7 @@ async function cliMain(): Promise<void> {
 			devTools,
 			waitForDebugger: port,
 			folderUri,
-			folderMountPath,
+			folderPath,
 			headless
 		})
 	} else {
@@ -334,7 +337,7 @@ async function cliMain(): Promise<void> {
 			devTools,
 			waitForDebugger: port,
 			folderUri,
-			folderMountPath,
+			folderPath,
 			headless
 		})
 	}

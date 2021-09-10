@@ -2,25 +2,26 @@
 
 ![Test Status Badge](https://github.com/microsoft/vscode-test-web/workflows/Tests/badge.svg)
 
-This module helps testing VS Code web extensions locally.
+This module helps testing [VS Code web extensions](https://code.visualstudio.com/api/extension-guides/web-extensions) locally.
 
-The node module runs a local web server that serves VS Code Browser including the extensions located at the given local path. Additionally the extension tests are automatically run.
+The node module runs a local web server that serves VS Code for the browser including the extensions located at the given local path. Additionally the extension tests are automatically run.
 
+The node module providers a command line as well as an API.
 
 ## Usage
 
 Via command line:
 
-Test web extension in browser:
+Test a web extension in a browser:
 
 ```sh
-vscode-test-web --browserType=webkit --extensionDevelopmentPath=$extensionLocation
+vscode-test-web --browserType=chromium --extensionDevelopmentPath=$extensionLocation
 ```
 
 Run web extension tests:
 
 ```sh
-vscode-test-web --browserType=webkit --extensionDevelopmentPath=$extensionLocation --extensionTestsPath=$extensionLocation/dist/web/test/suite/index.js
+vscode-test-web --browserType=chromium --extensionDevelopmentPath=$extensionLocation --extensionTestsPath=$extensionLocation/dist/web/test/suite/index.js
 ```
 
 
@@ -51,14 +52,19 @@ CLI options:
   --browserType 'chromium' | 'firefox' | 'webkit': The browser to launch
   --extensionDevelopmentPath path. [Optional]: A path pointing to a extension to include.
   --extensionTestsPath path.  [Optional]: A path to a test module to run
-  --folder-uri.  [Optional]: The folder to open VS Code on
   --version. 'insiders' (Default) | 'stable' | 'sources' [Optional]
   --open-devtools. Opens the dev tools  [Optional]
   --headless. Whether to show the browser. Defaults to true when an extensionTestsPath is provided, otherwise false. [Optional]
+  folderPath. A local folder to open VS Code on. The folder content will be available as a virtual file system`
+
 ```
 
 Corrsponding options are available in the API.
 
+
+The `folderPath` argument allows to work on existing files.
+VS Code for the browser will open an a virtual file system ('vscode-test-web://mount') where the files of the local folder will served.
+The file system is read/write, but modifications are stored in memory and not written back to disk.
 
 ## Development
 
