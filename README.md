@@ -24,6 +24,13 @@ Run web extension tests:
 vscode-test-web --browserType=chromium --extensionDevelopmentPath=$extensionLocation --extensionTestsPath=$extensionLocation/dist/web/test/suite/index.js
 ```
 
+Open VS Code in the Browser on a folder with test data from the local disk:
+
+```
+vscode-test-web --browserType=chromium --extensionDevelopmentPath=$extensionLocation $testDataLocation
+```
+
+VS Code Browser will open on a virtual workspace (scheme `vscode-test-web`), backed by a file system provider that gets the file/folder data from the local disk. Changes to the file system are kept in memory and are not written back to disk.
 
 Via API:
 
@@ -59,17 +66,7 @@ CLI options:
 
 ```
 
-Corrsponding options are available in the API.
-
-
-The `folderPath` argument allows to work on existing files.
-VS Code for the browser will open an a virtual file system ('vscode-test-web://mount') where the files of the local folder will served.
-The file system is read/write, but modifications are stored in memory and not written back to disk.
-
-```sh
-vscode-test-web --browserType=chromium --extensionDevelopmentPath=$extensionLocation --extensionTestsPath=$extensionLocation/dist/web/test/suite/index.js $testWorkspaceFolder
-```
-
+Corresponding options are available in the API.
 
 ## Development
 
