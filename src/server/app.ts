@@ -27,16 +27,16 @@ export default async function createApp(config: IConfig): Promise<Koa> {
 
 	if (config.extensionPath) {
 		console.log('Serving extensions from ' + config.extensionPath);
-		app.use(kmount('/static/extensions', kstatic(config.extensionPath)));
+		app.use(kmount('/static/extensions', kstatic(config.extensionPath, { hidden: true })));
 	}
 
 	if (config.extensionDevelopmentPath) {
 		console.log('Serving dev extensions from ' + config.extensionDevelopmentPath);
-		app.use(kmount('/static/devextensions', kstatic(config.extensionDevelopmentPath)));
+		app.use(kmount('/static/devextensions', kstatic(config.extensionDevelopmentPath, { hidden: true })));
 	}
 
 	if (config.build.type === 'static') {
-		app.use(kmount('/static/build', kstatic(config.build.location)));
+		app.use(kmount('/static/build', kstatic(config.build.location, { hidden: true })));
 	}
 
 	configureMounts(config, app);

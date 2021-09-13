@@ -21,9 +21,9 @@ export function configureMounts(config: IConfig, app: Koa): void {
     if (folderMountPath) {
         console.log(`Serving local content ${folderMountPath} at ${mountPrefix}`);
         app.use(fileOps(mountPrefix, folderMountPath));
-        app.use(kmount(mountPrefix, kstatic(folderMountPath)));
+        app.use(kmount(mountPrefix, kstatic(folderMountPath, { hidden: true })));
 
-        app.use(kmount(fsProviderExtensionPrefix, kstatic(path.join(__dirname, '../../fs-provider'))));
+        app.use(kmount(fsProviderExtensionPrefix, kstatic(path.join(__dirname, '../../fs-provider'), { hidden: true })));
     }
 }
 

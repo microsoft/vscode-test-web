@@ -78,9 +78,10 @@ suite('Workspace folder access', () => {
 	}
 
 	test('Folder contents', async () => {
-		await assertEntries('/folder', ['x.txt'], []);
-		await assertEntries('/folder/', ['x.txt'], []);
+		await assertEntries('/folder', ['x.txt'], ['.bar']);
+		await assertEntries('/folder/', ['x.txt'], ['.bar']);
 		await assertEntries('/', ['hello.txt', 'world.txt'], ['folder']);
+		await assertEntries('/folder/.bar', ['.foo'], []);
 	});
 
 	test('File contents', async () => {
@@ -93,8 +94,10 @@ suite('Workspace folder access', () => {
 		await assertStats('/hello.txt', true, 8);
 		await assertStats('/world.txt', true, 8);
 		await assertStats('/folder/x.txt', true, 4);
-		await assertStats('/folder/', false, 0);
-		await assertStats('/', false, 0);
+		await assertStats('/folder/', false);
+		await assertStats('/folder/.bar', false);
+		await assertStats('/folder/.bar/.foo', true, 3);
+		await assertStats('/', false);
 	});
 
 	test('Create and delete directory', async () => {
@@ -113,10 +116,10 @@ suite('Workspace folder access', () => {
 		await assertEntries('/', ['hello.txt', 'world.txt'], ['folder']);
 
 		await createFile('/folder/more.txt', 'moreContent');
-		await assertEntries('/folder', ['x.txt', 'more.txt'], []);
+		await assertEntries('/folder', ['x.txt', 'more.txt'], ['.bar']);
 		await assertContent('/folder/more.txt', 'moreContent');
 		await deleteEntry('/folder/more.txt', true);
-		await assertEntries('/folder', ['x.txt'], []);
+		await assertEntries('/folder', ['x.txt'], ['.bar']);
 
 	});
 
@@ -124,11 +127,11 @@ suite('Workspace folder access', () => {
 		await createFolder('/folder/testing');
 		await createFile('/folder/testing/doc.txt', 'more');
 		await createFolder('/folder/testing/inner');
-		await assertEntries('/folder', ['x.txt'], ['testing']);
+		await assertEntries('/folder', ['x.txt'], ['testing', '.bar']);
 		await assertEntries('/folder/testing', ['doc.txt'], ['inner']);
 
 		await vscode.workspace.fs.rename(getUri('/folder/testing'), getUri('/folder/newTesting'));
-		await assertEntries('/folder', ['x.txt'], ['newTesting']);
+		await assertEntries('/folder', ['x.txt'], ['newTesting', '.bar']);
 		await assertEntries('/folder/newTesting', ['doc.txt'], ['inner']);
 		await assertEntries('/folder/newTesting/inner', [], []);
 		await assertNotExisting('/folder/testing', false);
@@ -139,9 +142,9 @@ suite('Workspace folder access', () => {
 	test('Copy', async () => {
 
 		await vscode.workspace.fs.copy(getUri('/folder'), getUri('/copyOf/archive/'));
-		await assertEntries('/folder', ['x.txt'], []);
+		await assertEntries('/folder', ['x.txt'], ['.bar']);
 		await assertEntries('/copyOf', [], ['archive']);
-		await assertEntries('/copyOf/archive', ['x.txt'], []);
+		await assertEntries('/copyOf/archive', ['x.txt'], ['.bar']);
 
 		await deleteEntry('/copyOf', false);
 	});
