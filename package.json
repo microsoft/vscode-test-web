@@ -1,6 +1,6 @@
 {
   "name": "@vscode/test-web",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "scripts": {
     "init": "yarn --cwd=fs-provider && yarn --cwd=sample",
     "compile": "tsc -p ./ && yarn compile-fs-provider",
