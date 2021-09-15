@@ -1,6 +1,5 @@
 import * as path from 'path';
 
-//import { runTests } from '@vscode/test-web';
 import { runTests } from '../../../..';
 
 async function main() {
@@ -11,6 +10,8 @@ async function main() {
 		// The path to module with the test runner and tests
 		const extensionTestsPath = path.resolve(__dirname, './suite/index');
 
+		const folderPath = path.resolve(__dirname, '../../../test-workspace');
+
 		const attachArgName = '--waitForDebugger=';
 		const waitForDebugger = process.argv.find(arg => arg.startsWith(attachArgName));
 
@@ -19,6 +20,7 @@ async function main() {
 			browserType: 'chromium',
 			extensionDevelopmentPath,
 			extensionTestsPath,
+			folderPath,
 			waitForDebugger: waitForDebugger ? Number(waitForDebugger.slice(attachArgName.length)) : undefined,
 		});
 	} catch (err) {

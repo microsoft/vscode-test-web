@@ -311,9 +311,9 @@ async function cliMain(): Promise<void> {
 		if (input) {
 			folderPath = input;
 			if (folderUri) {
-				console.log(`Local folder provided as input, ignoring 'folder-uri'`)
+				console.log(`Local folder provided as input, ignoring 'folder-uri'`);
+				folderUri = undefined;
 			}
-			folderUri = `vscode-test-web://mount/`;
 		}
 	}
 

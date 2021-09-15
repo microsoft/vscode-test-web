@@ -11,7 +11,7 @@ import * as Router from '@koa/router';
 import { IConfig } from './main';
 import { scanForExtensions, URIComponents } from './extensions';
 import { fetch, fetchJSON } from './download';
-import { fsProviderExtensionPrefix } from './mounts';
+import { fsProviderExtensionPrefix, fsProviderFolderUri } from './mounts';
 
 interface IDevelopmentOptions {
 	extensionTestsPath?: URIComponents;
@@ -97,14 +97,14 @@ async function getWorkbenchOptions(
 			};
 		}
 	}
-	if (config.folderUri) {
-		options.folderUri = URI.parse(config.folderUri);
-	}
 	if (config.folderMountPath) {
 		if (!options.additionalBuiltinExtensions) {
 			options.additionalBuiltinExtensions = [];
 		}
-		options.additionalBuiltinExtensions.push({ scheme: ctx.protocol, authority: ctx.host, path: fsProviderExtensionPrefix })
+		options.additionalBuiltinExtensions.push({ scheme: ctx.protocol, authority: ctx.host, path: fsProviderExtensionPrefix });
+		options.folderUri = URI.parse(fsProviderFolderUri);
+	} else if (config.folderUri) {
+		options.folderUri = URI.parse(config.folderUri);
 	}
 	return options;
 }
