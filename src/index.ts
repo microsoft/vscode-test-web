@@ -141,7 +141,8 @@ export async function open(options: Options): Promise<void> {
 		browserType: options.browserType,
 		endpoint,
 		headless: options.headless ?? false,
-		devTools: options.devTools
+		devTools: options.devTools,
+		waitForDebugger: options.waitForDebugger
 	});
 }
 
