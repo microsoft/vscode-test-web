@@ -24,7 +24,7 @@
 	},
 	"scripts": {
 		"test": "node ./dist/web/test/runTest.js",
-		"pretest": "npm run compile-web && tsc ./src/web/test/runTest.ts --outDir ./dist --rootDir ./src --target es6 --module commonjs",
+		"pretest": "npm run compile-web && tsc -p tsconfig.runTest.json",
 		"vscode:prepublish": "npm run package-web",
 		"compile-web": "webpack",
 		"watch-web": "webpack --watch",
