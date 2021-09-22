@@ -14,13 +14,13 @@ const webConfig = {
 	mode: 'none', // this leaves the source code as close as possible to the original (when packaging we set this to 'production')
 	target: 'webworker', // web extensions run in a webworker context
 	entry: {
-		'extension-web': './src/extension.ts', // source of the web extension main file
+		'fsExtensionMain': './src/fsExtensionMain.ts', // source of the web extension main file
 	},
 	output: {
 		filename: '[name].js',
 		path: path.join(__dirname, './dist'),
 		libraryTarget: 'commonjs',
-		devtoolModuleFilenameTemplate: '../../[resource-path]'
+		devtoolModuleFilenameTemplate: '../[resource-path]'
 	},
 	resolve: {
 		mainFields: ['browser', 'module', 'main'], // look for `browser` entry point in imported node modules
@@ -58,7 +58,7 @@ const webConfig = {
 	performance: {
 		hints: false,
 	},
-	devtool: 'source-map', // create a source map that points to the original source file
+	devtool: 'nosources-source-map', // create a source map that points to the original source file
 };
 
 module.exports = [webConfig];

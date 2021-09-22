@@ -15,7 +15,7 @@
 	"activationEvents": [
 		"onFileSystem:vscode-test-web"
 	],
-	"browser": "./dist/extension-web.js",
+	"browser": "./dist/fsExtensionMain.js",
 	"scripts": {
 		"vscode:prepublish": "npm run package-web",
 		"compile-web": "webpack",
