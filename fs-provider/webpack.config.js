@@ -8,7 +8,8 @@
 const path = require('path');
 const webpack = require('webpack');
 
-const webConfig = /** @type WebpackConfig */ {
+/** @type WebpackConfig */
+const webConfig = {
 	context: __dirname,
 	mode: 'none', // this leaves the source code as close as possible to the original (when packaging we set this to 'production')
 	target: 'webworker', // web extensions run in a webworker context
@@ -19,6 +20,7 @@ const webConfig = /** @type WebpackConfig */ {
 		filename: '[name].js',
 		path: path.join(__dirname, './dist'),
 		libraryTarget: 'commonjs',
+		devtoolModuleFilenameTemplate: '../../[resource-path]'
 	},
 	resolve: {
 		mainFields: ['browser', 'module', 'main'], // look for `browser` entry point in imported node modules

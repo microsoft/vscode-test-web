@@ -12,7 +12,7 @@ export const SCHEME = 'vscode-test-web';
 interface File {
 	readonly type: FileType.File;
 	readonly name: string;
-	serverUri?: Uri | undefined;
+	serverUri?: Uri;
 	stats?: FileStat;
 	content?: Uint8Array;
 }
@@ -20,7 +20,7 @@ interface File {
 interface Directory {
 	readonly type: FileType.Directory;
 	readonly name: string;
-	serverUri?: Uri | undefined;
+	serverUri?: Uri;
 	stats?: FileStat;
 	entries?: Map<string, File | Directory>;
 }
@@ -50,7 +50,7 @@ async function getStats(entry: Entry): Promise<FileStat> {
 	if (stats === undefined) {
 		if (entry.serverUri) {
 			const url = entry.serverUri.with({ query: 'stat' }).toString();
-			const response = await xhr({ url: url.toString() });
+			const response = await xhr({ url });
 			if (response.status === 200) {
 				try {
 					const res = JSON.parse(response.responseText);

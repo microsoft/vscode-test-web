@@ -12,7 +12,8 @@
 const path = require('path');
 const webpack = require('webpack');
 
-module.exports = /** @type WebpackConfig */ {
+/** @type WebpackConfig */
+const webExtensionConfig = {
 	mode: 'none', // this leaves the source code as close as possible to the original (when packaging we set this to 'production')
 	target: 'webworker', // extensions run in a webworker context
 	entry: {
@@ -22,7 +23,8 @@ module.exports = /** @type WebpackConfig */ {
 	output: {
 		filename: '[name].js',
 		path: path.join(__dirname, './dist/web'),
-		libraryTarget: 'commonjs'
+		libraryTarget: 'commonjs',
+		devtoolModuleFilenameTemplate: "../../[resource-path]",
 	},
 	resolve: {
 		mainFields: ['module', 'main'],
@@ -57,3 +59,5 @@ module.exports = /** @type WebpackConfig */ {
 	},
 	devtool: 'nosources-source-map'
 };
+
+module.exports =  [ webExtensionConfig ];
