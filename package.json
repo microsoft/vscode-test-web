@@ -11,7 +11,7 @@
     "postversion": "git push && git push --tags",
     "compile-fs-provider": "yarn --cwd=fs-provider compile-web",
     "compile-sample": "yarn --cwd=sample compile-web",
-    "sample": "npm run compile && npm run compile-sample && node . --extensionDevelopmentPath=sample --browserType=chromium sample/test-workspace --version=sources",
+    "sample": "npm run compile && npm run compile-sample && node . --extensionDevelopmentPath=sample --browserType=chromium sample/test-workspace",
     "sample-tests": "npm run compile &&  npm run compile-sample && node . --extensionDevelopmentPath=sample --extensionTestsPath=sample/dist/web/test/suite/index.js --browserType=chromium --headless=false sample/test-workspace"
   },
   "main": "./out/index.js",
