@@ -92,6 +92,11 @@ export interface Options {
 	 * Example: [ 'clipboard-read', 'clipboard-write' ]
 	 */
 	permissions?: string[];
+
+	/**
+	 * Absolute paths pointing to built-in extensions to include.
+	 */
+	extensionPaths?: string[];
 }
 
 export interface Disposable {
@@ -110,7 +115,8 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 		build: await getBuild(options.version),
 		folderUri: options.folderUri,
 		folderMountPath: options.folderPath,
-		hideServerLog: true
+		hideServerLog: true,
+		extensionPaths: options.extensionPaths
 	};
 
 	const port = 3000;
@@ -155,6 +161,7 @@ export async function open(options: Options): Promise<Disposable> {
 		build: await getBuild(options.version),
 		folderUri: options.folderUri,
 		folderMountPath: options.folderPath,
+		extensionPaths: options.extensionPaths
 	};
 
 	const port = 3000;
@@ -271,12 +278,37 @@ function valdiatePermissions(permissions: unknown): string[] | undefined {
 		return permissions;
 	}
 
-	console.log(`Invalid browser type.`);
+	console.log(`Invalid permission`);
 	showHelp();
 	process.exit(-1);
 }
 
-async function validatePath(loc: string, isFile?: boolean): Promise<string | undefined> {
+async function valdiateExtensionPaths(extensionPaths: unknown): Promise<string[] | undefined> {
+	if (extensionPaths === undefined) {
+		return undefined
+	}
+	if (!Array.isArray(extensionPaths)) {
+		extensionPaths = [extensionPaths];
+	}
+	if (Array.isArray(extensionPaths)) {
+		const res: string[] = [];
+		for (const extensionPath of extensionPaths) {
+			if (typeof extensionPath === 'string') {
+				res.push(await validatePath(extensionPath));
+			} else {
+				break;
+			}
+		}
+		return res;
+	}
+
+	console.log(`Invalid extensionPath`);
+	showHelp();
+	process.exit(-1);
+}
+
+
+async function validatePath(loc: string, isFile?: boolean): Promise<string> {
 	loc = path.resolve(loc);
 	if (isFile) {
 		if (!await fileExists(loc)) {
@@ -322,12 +354,13 @@ interface CommandLineOptions {
 	hideServerLog?: boolean;
 	'folder-uri'?: string;
 	permission?: string | string[];
+	extensionPath: string | string[];
 }
 
 function showHelp() {
 	console.log('Usage:');
 	console.log(`  --browserType 'chromium' | 'firefox' | 'webkit': The browser to launch. [Optional, default 'chromium']`)
-	console.log(`  --extensionDevelopmentPath path: A path pointing to an extension to include. [Optional]`);
+	console.log(`  --extensionDevelopmentPath path: A path pointing to an extension under development to include. [Optional]`);
 	console.log(`  --extensionTestsPath path: A path to a test module to run. [Optional]`);
 	console.log(`  --version 'insiders' | 'stable' | 'sources' [Optional, default 'insiders']`);
 	console.log(`  --open-devtools: If set, opens the dev tools  [Optional]`);
@@ -335,16 +368,18 @@ function showHelp() {
 	console.log(`  --hideServerLog: Whether to hide the server log. Defaults to true when an extensionTestsPath is provided, otherwise false. [Optional]`);
 	console.log(`  --permission: Permission granted in the opened browser: e.g. 'clipboard-read', 'clipboard-write':  [Optional, Multiple]`);
 	console.log(`  --folder-uri: workspace to open VS Code on. Ignored when folderPath is provided [Optional]`);
+	console.log(`  --extensionPath: A path pointing to a folder containing additional extensions to include [Optional, Multiple]`);
 	console.log(`  folderPath. A local folder to open VS Code on. The folder content will be available as a virtual file system. [Optional]`);
 }
 
 async function cliMain(): Promise<void> {
-	const options: minimist.Opts = { string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browserType', 'version', 'waitForDebugger', 'folder-uri', 'permission'], boolean: ['open-devtools', 'headless', 'hideServerLog'] };
+	const options: minimist.Opts = { string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browserType', 'version', 'waitForDebugger', 'folder-uri', 'permission', 'extensionPath'], boolean: ['open-devtools', 'headless', 'hideServerLog'] };
 	const args = minimist<CommandLineOptions>(process.argv.slice(2), options);
 
 	const browserType = valdiateBrowserType(args.browserType);
 	const extensionTestsPath = await validatePathOrUndefined(args, 'extensionTestsPath', true);
 	const extensionDevelopmentPath = await validatePathOrUndefined(args, 'extensionDevelopmentPath');
+	const extensionPaths = await valdiateExtensionPaths(args.extensionPath);
 	const version = validateVersion(args.version);
 	const devTools = validateBooleanOrUndefined(args, 'open-devtools');
 	const headless = validateBooleanOrUndefined(args, 'headless');
@@ -380,7 +415,8 @@ async function cliMain(): Promise<void> {
 			folderPath,
 			headless,
 			hideServerLog,
-			permissions
+			permissions,
+			extensionPaths
 		})
 	} else {
 		open({
@@ -393,7 +429,8 @@ async function cliMain(): Promise<void> {
 			folderPath,
 			headless,
 			hideServerLog,
-			permissions
+			permissions,
+			extensionPaths
 		})
 	}
 }

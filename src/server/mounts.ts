@@ -14,7 +14,7 @@ import { Dirent, promises as fs, Stats } from 'fs';
 import * as path from 'path';
 
 const mountPrefix = '/static/mount';
-export const fsProviderExtensionPrefix = '/static/fsproviderextension';
+export const fsProviderExtensionPrefix = '/static/extensions/fs';
 export const fsProviderFolderUri = 'vscode-test-web://mount/';
 
 export function configureMounts(config: IConfig, app: Koa): void {

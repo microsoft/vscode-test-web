@@ -6,7 +6,7 @@
 import createApp from './app';
 
 export interface IConfig {
-	readonly extensionPath?: string;
+	readonly extensionPaths?: string[];
 	readonly extensionDevelopmentPath?: string;
 	readonly extensionTestsPath?: string;
 	readonly build: Sources | Static | CDN;

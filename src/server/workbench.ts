@@ -71,12 +71,14 @@ async function getWorkbenchOptions(
 	config: IConfig
 ): Promise<IWorkbenchOptions> {
 	const options: IWorkbenchOptions = {};
-	if (config.extensionPath) {
-		options.additionalBuiltinExtensions = await scanForExtensions(config.extensionPath, {
-			scheme: ctx.protocol,
-			authority: ctx.host,
-			path: '/static/extensions',
-		});
+	if (config.extensionPaths) {
+		await Promise.all(config.extensionPaths.map(async (extensionPath, index) => {
+			options.additionalBuiltinExtensions = await scanForExtensions(extensionPath, {
+				scheme: ctx.protocol,
+				authority: ctx.host,
+				path: `/static/extensions/${index}`,
+			});
+		}));
 	}
 	if (config.extensionDevelopmentPath) {
 		const developmentOptions: IDevelopmentOptions = options.developmentOptions = {}
