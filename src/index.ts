@@ -373,7 +373,17 @@ function showHelp() {
 }
 
 async function cliMain(): Promise<void> {
-	const options: minimist.Opts = { string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browserType', 'version', 'waitForDebugger', 'folder-uri', 'permission', 'extensionPath'], boolean: ['open-devtools', 'headless', 'hideServerLog'] };
+	const options: minimist.Opts = {
+		string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browserType', 'version', 'waitForDebugger', 'folder-uri', 'permission', 'extensionPath'],
+		boolean: ['open-devtools', 'headless', 'hideServerLog'],
+		unknown: arg => {
+			if (arg.startsWith('-')) {
+				console.log(`Unknown argument ${arg}`);
+				return false;
+			}
+			return true;
+		}
+	};
 	const args = minimist<CommandLineOptions>(process.argv.slice(2), options);
 
 	const browserType = valdiateBrowserType(args.browserType);
