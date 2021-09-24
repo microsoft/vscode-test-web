@@ -12,5 +12,5 @@ export function activate(context: vscode.ExtensionContext) {
 	const disposable = vscode.workspace.registerFileSystemProvider(SCHEME, new MountsFileSystemProvider(serverUri));
 	context.subscriptions.push(disposable);
 
-	console.log(`vscode-test-web-support fs provider registeres for ${SCHEME}, mount ${serverUri.toString()}`);
+	console.log(`vscode-test-web-support fs provider registers for ${SCHEME}, initial content from ${serverUri.toString()}`);
 }

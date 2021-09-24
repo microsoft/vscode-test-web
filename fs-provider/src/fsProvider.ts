@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { EventEmitter, Event, Uri, FileSystemProvider, Disposable, FileType, FileStat, FileSystemError, FileChangeType, FileChangeEvent } from 'vscode';
-import { Utils } from 'vscode-uri'
+import { Utils } from 'vscode-uri';
 import { xhr } from 'request-light';
 
 export const SCHEME = 'vscode-test-web';
@@ -29,12 +29,12 @@ type Entry = File | Directory;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isEntry(e: any): e is Entry {
-	return e && (e.type == FileType.Directory || e.type == FileType.File) && typeof e.name === 'string' && e.name.length > 0;
+	return e && (e.type === FileType.Directory || e.type === FileType.File) && typeof e.name === 'string' && e.name.length > 0;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isStat(e: any): e is FileStat {
-	return e && (e.type == FileType.Directory || e.type == FileType.File) && typeof e.ctime === 'number' && typeof e.mtime === 'number' && typeof e.size === 'number';
+	return e && (e.type === FileType.Directory || e.type === FileType.File) && typeof e.ctime === 'number' && typeof e.mtime === 'number' && typeof e.size === 'number';
 }
 
 function newFileStat(type: FileType, size: number): FileStat {
@@ -107,7 +107,7 @@ export class MountsFileSystemProvider implements FileSystemProvider {
 	// --- manage file metadata
 
 	async stat(resource: Uri): Promise<FileStat> {
-		const entry = await this._lookup(resource, false)
+		const entry = await this._lookup(resource, false);
 		return getStats(entry);
 	}
 
