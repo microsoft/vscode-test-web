@@ -2,7 +2,7 @@
   "name": "@vscode/test-web",
   "version": "0.0.13",
   "scripts": {
-    "init": "yarn --cwd=fs-provider && yarn --cwd=sample",
+    "install-extensions": "yarn --cwd=fs-provider && yarn --cwd=sample",
     "compile": "tsc -p ./ && yarn compile-fs-provider",
     "watch": "tsc -w -p ./",
     "prepublishOnly": "yarn compile",

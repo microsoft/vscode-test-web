@@ -73,7 +73,7 @@ Corresponding options are available in the API.
 
 ## Development
 
-- `yarn && yarn init`
+- `yarn && yarn install-extensions`
 - Make necessary changes in [`src`](./src)
 - `yarn compile` (or `yarn watch`)
 
