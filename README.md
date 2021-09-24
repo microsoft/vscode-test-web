@@ -1,15 +1,17 @@
 # @vscode/test-web
 
-This module helps testing [VS Code web extensions](https://code.visualstudio.com/api/extension-guides/web-extensions) locally.
+This module helps testing VS Code web extensions locally.
 
 [![Test Status Badge](https://github.com/microsoft/vscode-test-web/workflows/Tests/badge.svg)](https://github.com/microsoft/vscode-test-web/actions/workflows/tests.yml)
 [![npm Package](https://img.shields.io/npm/v/@vscode/test-web.svg?style=flat-square)](https://www.npmjs.org/package/@vscode/test-web)
 [![NPM Downloads](https://img.shields.io/npm/dm/@vscode/test-web.svg)](https://npmjs.org/package/@vscode/test-web)
 
 
-The node module runs a local web server that serves VS Code for the browser including the extensions located at the given local path. Additionally the extension tests are automatically run.
+See the [web extensions guide](https://code.visualstudio.com/api/extension-guides/web-extensions) to learn about web extensions.
 
-The node module providers a command line as well as an API.
+The node module runs a local web server that serves VS Code in the browser including the extension under development. Additionally the extension tests are automatically run.
+
+The node module provides a command line as well as an API.
 
 ## Usage
 
@@ -59,8 +61,8 @@ go()
 
 CLI options:
 
- |Option|Argument Description||
- |-----|-----|----|
+ |Option|Argument Description|
+ |-----|-----|
  | --browserType | The browser to launch: `chromium` (default), `firefox` or `webkit` |
 | --extensionDevelopmentPath | A path pointing to an extension under development to include. |
 | --extensionTestsPath |  A path to a test module to run. |
