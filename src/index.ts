@@ -119,7 +119,8 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 	return new Promise(async (s, e) => {
 
 		const endpoint = `http://localhost:${port}`;
-		const context = await openInBrowser(endpoint, options);
+		const context = await openBrowser(endpoint, options);
+		context.once('close', () => server.close());
 		await context.exposeFunction('codeAutomationLog', (type: 'warn' | 'error' | 'info', args: unknown[]) => {
 			console[type](...args);
 		});
@@ -160,19 +161,22 @@ export async function open(options: Options): Promise<Disposable> {
 	const server = await runServer(port, config);
 
 	const endpoint = `http://localhost:${port}`;
-	const context = await openInBrowser(endpoint, options);
+	const context = await openBrowser(endpoint, options);
+	context.once('close', () => server.close());
+
 	return {
 		dispose: () => {
 			server.close();
 			context.browser()?.close();
 		}
 	}
+
 }
 
 const width = 1200;
 const height = 800;
 
-async function openInBrowser(endpoint: string, options: Options): Promise<playwright.BrowserContext> {
+async function openBrowser(endpoint: string, options: Options): Promise<playwright.BrowserContext> {
 	const args: string[] = []
 	if (process.platform === 'linux' && options.browserType === 'chromium') {
 		args.push('--no-sandbox');
@@ -189,6 +193,19 @@ async function openInBrowser(endpoint: string, options: Options): Promise<playwr
 	if (options.permissions) {
 		context.grantPermissions(options.permissions);
 	}
+
+	// forcefully close browser if last page is closed. workaround for https://github.com/microsoft/playwright/issues/2946
+	let openPages = 0;
+	context.on('page', page => {
+		openPages++;
+		page.once('close', () => {
+			openPages--;
+			if (openPages === 0) {
+				browser.close();
+			}
+		})
+	});
+
 
 	const page = context.pages()[0] ?? await context.newPage();
 	if (options.waitForDebugger) {
