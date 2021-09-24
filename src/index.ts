@@ -64,6 +64,11 @@ export interface Options {
 	headless?: boolean;
 
 	/**
+	 * Do not show the server log. Defaults to `true` if a extensionTestsPath is provided, `false` otherwise.
+	 */
+	hideServerLog?: boolean;
+
+	/**
 	 * Expose browser debugging on this port number, and wait for the debugger to attach before running tests.
 	 */
 	waitForDebugger?: number;
@@ -78,8 +83,19 @@ export interface Options {
 	/**
 	 * The folder URI to open VSCode on. If 'folderPath' is set this will be ignored and 'vscode-test-web://mount'
 	 * is used as folder URI instead.
- 	 */
+	 */
 	folderUri?: string;
+
+	/**
+	 * Permissions granted to the opened browser. An list of permissions can be found at
+	 * https://playwright.dev/docs/api/class-browsercontext#browser-context-grant-permissions
+	 * Example: [ 'clipboard-read', 'clipboard-write' ]
+	 */
+	permissions?: string[];
+}
+
+export interface Disposable {
+	dispose(): void;
 }
 
 /**
@@ -93,27 +109,35 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 		extensionTestsPath: options.extensionTestsPath,
 		build: await getBuild(options.version),
 		folderUri: options.folderUri,
-		folderMountPath: options.folderPath
+		folderMountPath: options.folderPath,
+		hideServerLog: true
 	};
 
 	const port = 3000;
 	const server = await runServer(port, config);
 
-	const endpoint = `http://localhost:${port}`;
+	return new Promise(async (s, e) => {
 
-	const result = await openInBrowser({
-		browserType: options.browserType,
-		endpoint,
-		headless: options.headless ?? true,
-		devTools: options.devTools,
-		waitForDebugger: options.waitForDebugger,
+		const endpoint = `http://localhost:${port}`;
+		const context = await openInBrowser(endpoint, options);
+		await context.exposeFunction('codeAutomationLog', (type: 'warn' | 'error' | 'info', args: unknown[]) => {
+			console[type](...args);
+		});
+
+		await context.exposeFunction('codeAutomationExit', async (code: number) => {
+			try {
+				await context.browser()?.close();
+			} catch (error) {
+				console.error(`Error when closing browser: ${error}`);
+			}
+			server.close();
+			if (code === 0) {
+				s();
+			} else {
+				e(new Error('Test failed'));
+			}
+		});
 	});
-
-	server.close();
-	if (result) {
-		return;
-	}
-	throw new Error('Test failed')
 }
 
 async function getBuild(version: VSCodeVersion | undefined): Promise<Static | Sources> {
@@ -123,76 +147,59 @@ async function getBuild(version: VSCodeVersion | undefined): Promise<Static | So
 	return await downloadAndUnzipVSCode(version === 'stable' ? 'stable' : 'insider');
 }
 
-export async function open(options: Options): Promise<void> {
-
+export async function open(options: Options): Promise<Disposable> {
 	const config: IConfig = {
 		extensionDevelopmentPath: options.extensionDevelopmentPath,
+		extensionTestsPath: options.extensionTestsPath,
 		build: await getBuild(options.version),
 		folderUri: options.folderUri,
-		folderMountPath: options.folderPath
+		folderMountPath: options.folderPath,
 	};
 
 	const port = 3000;
-	await runServer(port, config);
+	const server = await runServer(port, config);
 
 	const endpoint = `http://localhost:${port}`;
-
-	await openInBrowser({
-		browserType: options.browserType,
-		endpoint,
-		headless: options.headless ?? false,
-		devTools: options.devTools,
-		waitForDebugger: options.waitForDebugger
-	});
+	const context = await openInBrowser(endpoint, options);
+	return {
+		dispose: () => {
+			server.close();
+			context.browser()?.close();
+		}
+	}
 }
 
 const width = 1200;
 const height = 800;
 
-interface BrowserOptions {
-	browserType: BrowserType;
-	endpoint: string;
-	headless?: boolean;
-	devTools?: boolean;
-	waitForDebugger?: number;
-}
+async function openInBrowser(endpoint: string, options: Options): Promise<playwright.BrowserContext> {
+	const args: string[] = []
+	if (process.platform === 'linux' && options.browserType === 'chromium') {
+		args.push('--no-sandbox');
+	}
 
-function openInBrowser(options: BrowserOptions): Promise<boolean> {
-	return new Promise(async (s) => {
-		const args: string[] = []
-		if (process.platform === 'linux' && options.browserType === 'chromium') {
-			args.push('--no-sandbox');
-		}
+	if (options.waitForDebugger) {
+		args.push(`--remote-debugging-port=${options.waitForDebugger}`);
+	}
 
-		if (options.waitForDebugger) {
-			args.push(`--remote-debugging-port=${options.waitForDebugger}`);
-		}
+	const headless = options.headless ?? options.extensionDevelopmentPath !== undefined;
 
-		const browser = await playwright[options.browserType].launch({ headless: options.headless, args, devtools: options.devTools });
-		const context = await browser.newContext();
+	const browser = await playwright[options.browserType].launch({ headless, args, devtools: options.devTools });
+	const context = await browser.newContext();
+	if (options.permissions) {
+		context.grantPermissions(options.permissions);
+	}
 
-		const page = context.pages()[0] ?? await context.newPage();
-		if (options.waitForDebugger) {
-			await page.waitForFunction(() => '__jsDebugIsReady' in globalThis);
-		}
+	const page = context.pages()[0] ?? await context.newPage();
+	if (options.waitForDebugger) {
+		await page.waitForFunction(() => '__jsDebugIsReady' in globalThis);
+	}
 
-		await page.setViewportSize({ width, height });
+	await page.setViewportSize({ width, height });
 
-		await page.goto(options.endpoint);
-		await page.exposeFunction('codeAutomationLog', (type: 'warn' | 'error' | 'info', args: unknown[]) => {
-			console[type](...args);
-		});
+	await page.goto(endpoint);
 
-		await page.exposeFunction('codeAutomationExit', async (code: number) => {
-			try {
-				await browser.close();
-			} catch (error) {
-				console.error(`Error when closing browser: ${error}`);
-			}
-
-			s(code === 0);
-		});
-	});
+	return context;
 }
 
 function validateStringOrUndefined(options: CommandLineOptions, name: keyof CommandLineOptions): string | undefined {
@@ -222,12 +229,31 @@ function validateBooleanOrUndefined(options: CommandLineOptions, name: keyof Com
 }
 
 function valdiateBrowserType(browserType: unknown): BrowserType {
-	if (browserType === 'undefined') {
+	if (browserType === undefined) {
 		return 'chromium';
 	}
 	if ((typeof browserType === 'string') && ['chromium', 'firefox', 'webkit'].includes(browserType)) {
 		return browserType as BrowserType;
 	}
+	console.log(`Invalid browser type.`);
+	showHelp();
+	process.exit(-1);
+}
+
+function valdiatePermissions(permissions: unknown): string[] | undefined {
+	if (permissions === undefined) {
+		return undefined
+	}
+	function isValidPermission(p: unknown): p is string {
+		return typeof p === 'string';
+	}
+	if (isValidPermission(permissions)) {
+		return [permissions];
+	}
+	if (Array.isArray(permissions) && permissions.every(isValidPermission)) {
+		return permissions;
+	}
+
 	console.log(`Invalid browser type.`);
 	showHelp();
 	process.exit(-1);
@@ -276,32 +302,39 @@ interface CommandLineOptions {
 	type?: string;
 	'open-devtools'?: boolean;
 	headless?: boolean;
+	hideServerLog?: boolean;
 	'folder-uri'?: string;
+	permission?: string | string[];
 }
 
 function showHelp() {
 	console.log('Usage:');
-	console.log(`  --browserType 'chromium' | 'firefox' | 'webkit': The browser to launch`)
-	console.log(`  --extensionDevelopmentPath path. [Optional]: A path pointing to a extension to include.`);
-	console.log(`  --extensionTestsPath path.  [Optional]: A path to a test module to run`);
-	console.log(`  --version. 'insiders' (Default) | 'stable' | 'sources' [Optional]`);
-	console.log(`  --open-devtools. Opens the dev tools  [Optional]`);
-	console.log(`  --headless. Whether to show the browser. Defaults to true when an extensionTestsPath is provided, otherwise false. [Optional]`);
-	console.log(`  folderPath. A local folder to open VS Code on. The folder content will be available as a virtual file system`);
+	console.log(`  --browserType 'chromium' | 'firefox' | 'webkit': The browser to launch. [Optional, default 'chromium']`)
+	console.log(`  --extensionDevelopmentPath path: A path pointing to an extension to include. [Optional]`);
+	console.log(`  --extensionTestsPath path: A path to a test module to run. [Optional]`);
+	console.log(`  --version 'insiders' | 'stable' | 'sources' [Optional, default 'insiders']`);
+	console.log(`  --open-devtools: If set, opens the dev tools  [Optional]`);
+	console.log(`  --headless: Whether to hide the browser. Defaults to true when an extensionTestsPath is provided, otherwise false. [Optional]`);
+	console.log(`  --hideServerLog: Whether to hide the server log. Defaults to true when an extensionTestsPath is provided, otherwise false. [Optional]`);
+	console.log(`  --permission: Permission granted in the opened browser: e.g. 'clipboard-read', 'clipboard-write':  [Optional, Multiple]`);
+	console.log(`  --folder-uri: workspace to open VS Code on. Ignored when folderPath is provided [Optional]`);
+	console.log(`  folderPath. A local folder to open VS Code on. The folder content will be available as a virtual file system. [Optional]`);
 }
 
 async function cliMain(): Promise<void> {
-	const options: minimist.Opts = { string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browserType', 'version', 'waitForDebugger', 'folder-uri', 'mount'], boolean: ['open-devtools', 'headless'] };
+	const options: minimist.Opts = { string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browserType', 'version', 'waitForDebugger', 'folder-uri', 'permission'], boolean: ['open-devtools', 'headless', 'hideServerLog'] };
 	const args = minimist<CommandLineOptions>(process.argv.slice(2), options);
 
 	const browserType = valdiateBrowserType(args.browserType);
-	const version = validateVersion(args.version);
 	const extensionTestsPath = await validatePathOrUndefined(args, 'extensionTestsPath', true);
 	const extensionDevelopmentPath = await validatePathOrUndefined(args, 'extensionDevelopmentPath');
-	const headless = validateBooleanOrUndefined(args, 'headless');
+	const version = validateVersion(args.version);
 	const devTools = validateBooleanOrUndefined(args, 'open-devtools');
+	const headless = validateBooleanOrUndefined(args, 'headless');
+	const permissions = valdiatePermissions(args.permission);
+	const hideServerLog = validateBooleanOrUndefined(args, 'hideServerLog');
 
-	const port = validatePortNumber(args.waitForDebugger);
+	const waitForDebugger = validatePortNumber(args.waitForDebugger);
 
 	let folderUri = validateStringOrUndefined(args, 'folder-uri');
 	let folderPath: string | undefined;
@@ -325,10 +358,12 @@ async function cliMain(): Promise<void> {
 			browserType,
 			version,
 			devTools,
-			waitForDebugger: port,
+			waitForDebugger,
 			folderUri,
 			folderPath,
-			headless
+			headless,
+			hideServerLog,
+			permissions
 		})
 	} else {
 		open({
@@ -336,10 +371,12 @@ async function cliMain(): Promise<void> {
 			browserType,
 			version,
 			devTools,
-			waitForDebugger: port,
+			waitForDebugger,
 			folderUri,
 			folderPath,
-			headless
+			headless,
+			hideServerLog,
+			permissions
 		})
 	}
 }

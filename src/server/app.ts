@@ -15,7 +15,9 @@ import { configureMounts } from './mounts';
 export default async function createApp(config: IConfig): Promise<Koa> {
 	const app = new Koa();
 
-	app.use(morgan('dev'));
+	if (!config.hideServerLog) {
+		app.use(morgan('dev'));
+	}
 
 	// this is here such that the iframe worker can fetch the extension files
 	app.use((ctx, next) => {

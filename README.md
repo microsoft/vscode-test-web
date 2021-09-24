@@ -33,7 +33,7 @@ Open VS Code in the Browser on a folder with test data from the local disk:
 vscode-test-web --browserType=chromium --extensionDevelopmentPath=$extensionLocation $testDataLocation
 ```
 
-VS Code Browser will open on a virtual workspace (scheme `vscode-test-web`), backed by a file system provider that gets the file/folder data from the local disk. Changes to the file system are kept in memory and are not written back to disk.
+VS Code for the Web will open on a virtual workspace (scheme `vscode-test-web`), backed by a file system provider that gets the file/folder data from the local disk. Changes to the file system are kept in memory and are not written back to disk.
 
 Via API:
 
@@ -58,16 +58,19 @@ go()
 ```
 
 CLI options:
-```
-  --browserType 'chromium' | 'firefox' | 'webkit': The browser to launch
-  --extensionDevelopmentPath path. [Optional]: A path pointing to a extension to include.
-  --extensionTestsPath path.  [Optional]: A path to a test module to run
-  --version. 'insiders' (Default) | 'stable' | 'sources' [Optional]
-  --open-devtools. Opens the dev tools  [Optional]
-  --headless. Whether to show the browser. Defaults to true when an extensionTestsPath is provided, otherwise false. [Optional]
-  folderPath. A local folder to open VS Code on. The folder content will be available as a virtual file system`
 
-```
+ |Option|Argument Description||
+ |-----|-----|----|
+ | --browserType | The browser to launch: `chromium` (default), `firefox` or `webkit` |
+| --extensionDevelopmentPath | A path pointing to an extension to include. |
+| --extensionTestsPath |  A path to a test module to run. |
+| --version | `insiders` (default),  `stable` or  `sources`.<br>For sources, also run `yarn web` in a vscode repo   |
+| --open-devtools|  If set, opens the dev tools  |
+| --headless|  If set, hides the browser. Defaults to true when an extensionTestsPath is provided, otherwise false. |
+| --hideServerLog| If set, hides the server log. Defaults to true when an extensionTestsPath is provided, otherwise false. |
+| --permission|  Permission granted to the opened browser: e.g. `clipboard-read`, `clipboard-write`.  See [full list of options](https://playwright.dev/docs/api/class-browsercontext#browser-context-grant-permissions). Argument can be added multiple times.  |
+| --folder-uri | URI of the workspace to open VS Code on. Ignored when `folderPath` is provided |
+| folderPath |  A local folder to open VS Code on. The folder content will be available as a virtual file system and opened as workspace. |
 
 Corresponding options are available in the API.
 

@@ -12,6 +12,7 @@ export interface IConfig {
 	readonly build: Sources | Static | CDN;
 	readonly folderUri?: string;
 	readonly folderMountPath?: string;
+	readonly hideServerLog?: boolean;
 }
 
 export interface Sources {
