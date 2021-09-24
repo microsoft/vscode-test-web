@@ -1,8 +1,11 @@
 # @vscode/test-web
 
-![Test Status Badge](https://github.com/microsoft/vscode-test-web/workflows/Tests/badge.svg)
-
 This module helps testing [VS Code web extensions](https://code.visualstudio.com/api/extension-guides/web-extensions) locally.
+
+[![Test Status Badge](https://github.com/microsoft/vscode-test-web/workflows/Tests/badge.svg)](https://github.com/microsoft/vscode-test-web/actions/workflows/tests.yml)
+[![npm Package](https://img.shields.io/npm/v/@vscode/test-web.svg?style=flat-square)](https://www.npmjs.org/package/@vscode/test-web)
+[![NPM Downloads](https://img.shields.io/npm/dm/@vscode/test-web.svg)](https://npmjs.org/package/@vscode/test-web)
+
 
 The node module runs a local web server that serves VS Code for the browser including the extensions located at the given local path. Additionally the extension tests are automatically run.
 
@@ -70,7 +73,7 @@ Corresponding options are available in the API.
 
 ## Development
 
-- `yarn install`
+- `yarn && yarn init`
 - Make necessary changes in [`src`](./src)
 - `yarn compile` (or `yarn watch`)
 

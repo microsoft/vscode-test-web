@@ -17,6 +17,8 @@ jobs:
           node-version: 12.x
       - name: Install root project dependencies
         run: yarn
+      - name: Install sub project dependencies
+        run: yarn init
       - name: Run tests
         uses: GabrielBB/xvfb-action@v1.0
         with:
