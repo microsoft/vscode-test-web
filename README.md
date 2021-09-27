@@ -41,19 +41,23 @@ Via API:
 
 ```ts
 async function go() {
-	try {
-		// The folder containing the Extension Manifest package.json
-		const extensionDevelopmentPath = path.resolve(__dirname, '../../../');
+  try {
+    // The folder containing the Extension Manifest package.json
+    const extensionDevelopmentPath = path.resolve(__dirname, '../../../');
 
-		// The path to module with the test runner and tests
-		const extensionTestsPath = path.resolve(__dirname, './suite/index');
+    // The path to module with the test runner and tests
+    const extensionTestsPath = path.resolve(__dirname, './suite/index');
 
-		// Start a web server that serves VSCode in a browser, run the tests
-		await runTests({ browserType: 'chromium', extensionDevelopmentPath, extensionTestsPath });
-	} catch (err) {
-		console.error('Failed to run tests');
-		process.exit(1);
-	}
+    // Start a web server that serves VSCode in a browser, run the tests
+    await runTests({
+		browserType: 'chromium',
+		extensionDevelopmentPath
+		extensionTestsPath
+	});
+  } catch (err) {
+    console.error('Failed to run tests');
+    process.exit(1);
+  }
 }
 
 go()
