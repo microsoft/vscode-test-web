@@ -94,7 +94,7 @@ export async function downloadAndUnzipVSCode(quality: 'stable' | 'insider'): Pro
 
 	const downloadedPath = path.resolve(vscodeTestDir, folderName);
 	if (existsSync(downloadedPath) && existsSync(path.join(downloadedPath, 'version'))) {
-		return { type: 'static', location: downloadedPath };
+		return { type: 'static', location: downloadedPath, quality, version: info.version };
 	}
 
 	if (existsSync(vscodeTestDir)) {
@@ -121,7 +121,7 @@ export async function downloadAndUnzipVSCode(quality: 'stable' | 'insider'): Pro
 		}
 
 	}
-	return { type: 'static', location: downloadedPath };
+	return { type: 'static', location: downloadedPath, quality, version: info.version };
 }
 
 export async function fetch(api: string): Promise<string> {

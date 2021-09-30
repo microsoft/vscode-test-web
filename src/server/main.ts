@@ -22,6 +22,8 @@ export interface Sources {
 export interface Static {
 	type: 'static';
 	location: string;
+	quality: 'stable' | 'insider';
+	version: string;
 }
 
 export interface CDN {

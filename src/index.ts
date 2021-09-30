@@ -355,6 +355,7 @@ interface CommandLineOptions {
 	'folder-uri'?: string;
 	permission?: string | string[];
 	extensionPath: string | string[];
+	help?: boolean;
 }
 
 function showHelp() {
@@ -373,18 +374,27 @@ function showHelp() {
 }
 
 async function cliMain(): Promise<void> {
+	// eslint-disable-next-line @typescript-eslint/no-var-requires
+	const manifest = require('../package.json');
+	console.log(`${manifest.name}: ${manifest.version}`);
+
 	const options: minimist.Opts = {
 		string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browserType', 'version', 'waitForDebugger', 'folder-uri', 'permission', 'extensionPath'],
-		boolean: ['open-devtools', 'headless', 'hideServerLog'],
+		boolean: ['open-devtools', 'headless', 'hideServerLog', 'help'],
 		unknown: arg => {
 			if (arg.startsWith('-')) {
 				console.log(`Unknown argument ${arg}`);
+				showHelp();
 				return false;
 			}
 			return true;
 		}
 	};
 	const args = minimist<CommandLineOptions>(process.argv.slice(2), options);
+	if (args.help) {
+		showHelp();
+		process.exit();
+	}
 
 	const browserType = valdiateBrowserType(args.browserType);
 	const extensionTestsPath = await validatePathOrUndefined(args, 'extensionTestsPath', true);
