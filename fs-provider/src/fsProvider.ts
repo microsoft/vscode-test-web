@@ -5,115 +5,47 @@
 
 import { EventEmitter, Event, Uri, FileSystemProvider, Disposable, FileType, FileStat, FileSystemError, FileChangeType, FileChangeEvent } from 'vscode';
 import { Utils } from 'vscode-uri';
-import { xhr } from 'request-light';
 
-export const SCHEME = 'vscode-test-web';
-
-interface File {
+export interface File {
 	readonly type: FileType.File;
-	readonly name: string;
-	serverUri?: Uri;
-	stats?: FileStat;
-	content?: Uint8Array;
+	name: string;
+	stats: Promise<FileStat>;
+	content: Promise<Uint8Array>;
 }
 
-interface Directory {
+export interface Directory {
 	readonly type: FileType.Directory;
-	readonly name: string;
-	serverUri?: Uri;
-	stats?: FileStat;
-	entries?: Map<string, File | Directory>;
+	name: string;
+	stats: Promise<FileStat>;
+	entries: Promise<Map<string, Entry>>;
 }
 
-type Entry = File | Directory;
+export type Entry = File | Directory;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isEntry(e: any): e is Entry {
-	return e && (e.type === FileType.Directory || e.type === FileType.File) && typeof e.name === 'string' && e.name.length > 0;
+
+function newFileStat(type: FileType, size: number): Promise<FileStat> {
+	return Promise.resolve({ type, ctime: Date.now(), mtime: Date.now(), size });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isStat(e: any): e is FileStat {
-	return e && (e.type === FileType.Directory || e.type === FileType.File) && typeof e.ctime === 'number' && typeof e.mtime === 'number' && typeof e.size === 'number';
+function modifiedFileStat(stats: FileStat, size?: number): Promise<FileStat> {
+	return Promise.resolve({ type: stats.type, ctime: stats.ctime, mtime: Date.now(), size: size ?? stats.size });
 }
 
-function newFileStat(type: FileType, size: number): FileStat {
-	return { type, ctime: Date.now(), mtime: Date.now(), size };
-}
+export class MemFileSystemProvider implements FileSystemProvider {
 
-function modifiedFileStat(stats: FileStat, size?: number): FileStat {
-	return { type: stats.type, ctime: stats.ctime, mtime: Date.now(), size: size ?? stats.size };
-}
-
-async function getStats(entry: Entry): Promise<FileStat> {
-	let stats = entry.stats;
-	if (stats === undefined) {
-		if (entry.serverUri) {
-			const url = entry.serverUri.with({ query: 'stat' }).toString();
-			const response = await xhr({ url });
-			if (response.status === 200) {
-				try {
-					const res = JSON.parse(response.responseText);
-					if (isStat(res)) {
-						stats = res;
-					}
-				} catch {
-					// ignore
-				}
-			}
-		}
-		if (!stats) {
-			stats = newFileStat(entry.type, 0);
-		}
-		entry.stats = stats;
-	}
-	return stats;
-}
-
-async function getEntries(entry: Directory): Promise<Map<string, Entry>> {
-	if (entry.entries === undefined) {
-		entry.entries = new Map();
-		if (entry.serverUri) {
-			const url = entry.serverUri.with({ query: 'readdir' }).toString();
-			const response = await xhr({ url });
-			if (response.status === 200) {
-				try {
-					const res = JSON.parse(response.responseText);
-					if (Array.isArray(res)) {
-						for (const r of res) {
-							if (isEntry(r)) {
-								const newEntry: Entry = { type: r.type, name: r.name, serverUri: Utils.joinPath(entry.serverUri, r.name) };
-								entry.entries.set(newEntry.name, newEntry);
-							}
-						}
-					}
-				} catch {
-					// ignore
-				}
-			}
-		}
-	}
-	return entry.entries;
-}
-
-export class MountsFileSystemProvider implements FileSystemProvider {
-
-	root: Directory;
-
-	constructor(serverUri: Uri) {
-		this.root = { type: FileType.Directory, name: '', serverUri };
+	constructor(private readonly scheme: string, private readonly root: Directory) {
 	}
 
 	// --- manage file metadata
 
 	async stat(resource: Uri): Promise<FileStat> {
 		const entry = await this._lookup(resource, false);
-		return getStats(entry);
+		return entry.stats;
 	}
 
 	async readDirectory(resource: Uri): Promise<[string, FileType][]> {
 		const entry = await this._lookupAsDirectory(resource, false);
-		const entries = await getEntries(entry);
+		const entries = await entry.entries;
 		const result: [string, FileType][] = [];
 		entries.forEach((child, name) => result.push([name, child.type]));
 		return result;
@@ -123,27 +55,13 @@ export class MountsFileSystemProvider implements FileSystemProvider {
 
 	async readFile(resource: Uri): Promise<Uint8Array> {
 		const entry = await this._lookupAsFile(resource, false);
-		let content = entry.content;
-		if (content) {
-			return content;
-		}
-		const serverUri = entry.serverUri;
-		if (serverUri) {
-			const response = await xhr({ url: serverUri.toString() });
-			if (response.status >= 200 && response.status <= 204) {
-				content = entry.content = response.body;
-			}
-		}
-		if (!content) {
-			throw FileSystemError.FileNotFound(resource);
-		}
-		return content;
+		return entry.content;
 	}
 
 	async writeFile(uri: Uri, content: Uint8Array, opts: { create: boolean; overwrite: boolean; }): Promise<void> {
 		const basename = Utils.basename(uri);
 		const parent = await this._lookupParentDirectory(uri);
-		const entries = await getEntries(parent);
+		const entries = await parent.entries;
 		let entry = entries.get(basename);
 		if (entry && entry.type === FileType.Directory) {
 			throw FileSystemError.FileIsADirectory(uri);
@@ -156,12 +74,12 @@ export class MountsFileSystemProvider implements FileSystemProvider {
 		}
 		const stats = newFileStat(FileType.File, content.byteLength);
 		if (!entry) {
-			entry = { type: FileType.File, name: basename, stats, content };
+			entry = { type: FileType.File, name: basename, stats, content: Promise.resolve(content) };
 			entries.set(basename, entry);
 			this._fireSoon({ type: FileChangeType.Created, uri });
 		} else {
 			entry.stats = stats;
-			entry.content = content;
+			entry.content = Promise.resolve(content);
 		}
 		this._fireSoon({ type: FileChangeType.Changed, uri });
 	}
@@ -179,19 +97,14 @@ export class MountsFileSystemProvider implements FileSystemProvider {
 		const newParent = await this._lookupParentDirectory(to);
 		const newName = Utils.basename(to);
 
-		const oldParentEntries = await getEntries(oldParent);
+		const oldParentEntries = await oldParent.entries;
 
 		oldParentEntries.delete(entry.name);
 
-		let newEntry: Entry;
-		if (entry.type === FileType.File) {
-			newEntry = { type: FileType.File, name: newName, stats: entry.stats, serverUri: entry.serverUri, content: entry.content };
-		} else {
-			newEntry = { type: FileType.Directory, name: newName, stats: entry.stats, serverUri: entry.serverUri, entries: entry.entries };
-		}
+		entry.name = newName;
 
-		const newParentEntries = await getEntries(newParent);
-		newParentEntries.set(newName, newEntry);
+		const newParentEntries = await newParent.entries;
+		newParentEntries.set(newName, entry);
 
 		this._fireSoon(
 			{ type: FileChangeType.Deleted, uri: from },
@@ -203,7 +116,7 @@ export class MountsFileSystemProvider implements FileSystemProvider {
 		const dirname = Utils.dirname(uri);
 		const basename = Utils.basename(uri);
 		const parent = await this._lookupAsDirectory(dirname, false);
-		const parentEntries = await getEntries(parent);
+		const parentEntries = await parent.entries;
 		if (parentEntries.has(basename)) {
 			parentEntries.delete(basename);
 			parent.stats = newFileStat(parent.type, -1);
@@ -215,11 +128,11 @@ export class MountsFileSystemProvider implements FileSystemProvider {
 		const basename = Utils.basename(uri);
 		const dirname = Utils.dirname(uri);
 		const parent = await this._lookupAsDirectory(dirname, false);
-		const parentEntries = await getEntries(parent);
+		const parentEntries = await parent.entries;
 
-		const entry: Directory = { type: FileType.Directory, name: basename, stats: newFileStat(FileType.Directory, 0) };
+		const entry: Directory = { type: FileType.Directory, name: basename, stats: newFileStat(FileType.Directory, 0), entries: Promise.resolve(new Map()) };
 		parentEntries.set(entry.name, entry);
-		const stats = await getStats(parent);
+		const stats = await parent.stats;
 		parent.stats = modifiedFileStat(stats, stats.size + 1);
 		this._fireSoon({ type: FileChangeType.Changed, uri: dirname }, { type: FileChangeType.Created, uri });
 	}
@@ -229,7 +142,7 @@ export class MountsFileSystemProvider implements FileSystemProvider {
 	private async _lookup(uri: Uri, silent: false): Promise<Entry>;
 	private async _lookup(uri: Uri, silent: boolean): Promise<Entry | undefined>;
 	private async _lookup(uri: Uri, silent: boolean): Promise<Entry | undefined> {
-		if (uri.scheme !== SCHEME) {
+		if (uri.scheme !== this.scheme) {
 			if (!silent) {
 				throw FileSystemError.FileNotFound(uri);
 			} else {
@@ -244,7 +157,7 @@ export class MountsFileSystemProvider implements FileSystemProvider {
 			}
 			let child: Entry | undefined;
 			if (entry.type === FileType.Directory) {
-				child = (await getEntries(entry)).get(part);
+				child = (await entry.entries).get(part);
 			}
 			if (!child) {
 				if (!silent) {
