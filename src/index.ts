@@ -59,7 +59,7 @@ export interface Options {
 	devTools?: boolean;
 
 	/**
-	 * Do not show the browser. Defaults to `true` if a extensionTestsPath is provided, `false` otherwise.
+	 * Do not show the browser. Defaults to `true` if a `extensionTestsPath` is provided, `false` otherwise.
 	 */
 	headless?: boolean;
 
@@ -193,7 +193,7 @@ async function openBrowser(endpoint: string, options: Options): Promise<playwrig
 		args.push(`--remote-debugging-port=${options.waitForDebugger}`);
 	}
 
-	const headless = options.headless ?? options.extensionDevelopmentPath !== undefined;
+	const headless = options.headless ?? options.extensionTestsPath !== undefined;
 
 	const browser = await playwright[options.browserType].launch({ headless, args, devtools: options.devTools });
 	const context = await browser.newContext();
