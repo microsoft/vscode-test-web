@@ -12,6 +12,7 @@ import { downloadAndUnzipVSCode, directoryExists, fileExists } from './server/do
 import * as playwright from 'playwright';
 import * as minimist from 'minimist';
 import * as path from 'path';
+import * as getPort from 'get-port';
 
 export type BrowserType = 'chromium' | 'firefox' | 'webkit';
 export type VSCodeVersion = 'insiders' | 'stable' | 'sources';
@@ -97,6 +98,11 @@ export interface Options {
 	 * Absolute paths pointing to built-in extensions to include.
 	 */
 	extensionPaths?: string[];
+
+	/**
+	 * The preferred port number for running the local web server.
+	 */
+	port?: number;
 }
 
 export interface Disposable {
@@ -119,7 +125,11 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 		extensionPaths: options.extensionPaths
 	};
 
-	const port = 3000;
+	const preferredPort = options.port || 3000;
+	const port = await getPort({
+		host: 'localhost',
+		port: getPort.makeRange(preferredPort, preferredPort + 100)
+	});
 	const server = await runServer(port, config);
 
 	return new Promise(async (s, e) => {
@@ -164,7 +174,11 @@ export async function open(options: Options): Promise<Disposable> {
 		extensionPaths: options.extensionPaths
 	};
 
-	const port = 3000;
+	const preferredPort = options.port || 3000;
+	const port = await getPort({
+		host: 'localhost',
+		port: getPort.makeRange(preferredPort, preferredPort + 100)
+	});
 	const server = await runServer(port, config);
 
 	const endpoint = `http://localhost:${port}`;
@@ -336,7 +350,7 @@ function validateVersion(version: unknown): VSCodeVersion | undefined {
 function validatePortNumber(port: unknown): number | undefined {
 	if (typeof port === 'string') {
 		const number = Number.parseInt(port);
-		if (!Number.isNaN(number) && number >= 0) {
+		if (!Number.isNaN(number) && number >= 1024 && number <= 65535) {
 			return number;
 		}
 	}
@@ -355,6 +369,7 @@ interface CommandLineOptions {
 	'folder-uri'?: string;
 	permission?: string | string[];
 	extensionPath: string | string[];
+	port?: number;
 	help?: boolean;
 }
 
@@ -370,6 +385,7 @@ function showHelp() {
 	console.log(`  --permission: Permission granted in the opened browser: e.g. 'clipboard-read', 'clipboard-write':  [Optional, Multiple]`);
 	console.log(`  --folder-uri: workspace to open VS Code on. Ignored when folderPath is provided [Optional]`);
 	console.log(`  --extensionPath: A path pointing to a folder containing additional extensions to include [Optional, Multiple]`);
+	console.log(`  --port: The preferred port number for running the local web server. Defaults to 3000 if not set. [Optional]`);
 	console.log(`  folderPath. A local folder to open VS Code on. The folder content will be available as a virtual file system. [Optional]`);
 }
 
@@ -379,7 +395,7 @@ async function cliMain(): Promise<void> {
 	console.log(`${manifest.name}: ${manifest.version}`);
 
 	const options: minimist.Opts = {
-		string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browserType', 'version', 'waitForDebugger', 'folder-uri', 'permission', 'extensionPath'],
+		string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browserType', 'version', 'waitForDebugger', 'folder-uri', 'permission', 'extensionPath', 'port'],
 		boolean: ['open-devtools', 'headless', 'hideServerLog', 'help'],
 		unknown: arg => {
 			if (arg.startsWith('-')) {
@@ -407,6 +423,7 @@ async function cliMain(): Promise<void> {
 	const hideServerLog = validateBooleanOrUndefined(args, 'hideServerLog');
 
 	const waitForDebugger = validatePortNumber(args.waitForDebugger);
+	const port = validatePortNumber(args.port);
 
 	let folderUri = validateStringOrUndefined(args, 'folder-uri');
 	let folderPath: string | undefined;
@@ -436,7 +453,8 @@ async function cliMain(): Promise<void> {
 			headless,
 			hideServerLog,
 			permissions,
-			extensionPaths
+			extensionPaths,
+			port
 		})
 	} else {
 		open({
@@ -450,7 +468,8 @@ async function cliMain(): Promise<void> {
 			headless,
 			hideServerLog,
 			permissions,
-			extensionPaths
+			extensionPaths,
+			port
 		})
 	}
 }
