@@ -97,6 +97,9 @@ export interface Options {
 	 * Absolute paths pointing to built-in extensions to include.
 	 */
 	extensionPaths?: string[];
+
+
+	verbose?: boolean;
 }
 
 export interface Disposable {
@@ -218,6 +221,12 @@ async function openBrowser(endpoint: string, options: Options): Promise<playwrig
 	if (options.waitForDebugger) {
 		await page.waitForFunction(() => '__jsDebugIsReady' in globalThis);
 	}
+	if (options.verbose) {
+		page.on('console', (message) => {
+			console.log(message.text());
+		})
+	}
+
 
 	await page.setViewportSize({ width, height });
 
@@ -356,6 +365,7 @@ interface CommandLineOptions {
 	permission?: string | string[];
 	extensionPath: string | string[];
 	help?: boolean;
+	verbose?: boolean;
 }
 
 function showHelp() {
@@ -380,7 +390,7 @@ async function cliMain(): Promise<void> {
 
 	const options: minimist.Opts = {
 		string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browserType', 'version', 'waitForDebugger', 'folder-uri', 'permission', 'extensionPath'],
-		boolean: ['open-devtools', 'headless', 'hideServerLog', 'help'],
+		boolean: ['open-devtools', 'headless', 'hideServerLog', 'help', 'verbose'],
 		unknown: arg => {
 			if (arg.startsWith('-')) {
 				console.log(`Unknown argument ${arg}`);
@@ -405,6 +415,7 @@ async function cliMain(): Promise<void> {
 	const headless = validateBooleanOrUndefined(args, 'headless');
 	const permissions = valdiatePermissions(args.permission);
 	const hideServerLog = validateBooleanOrUndefined(args, 'hideServerLog');
+	const verbose = validateBooleanOrUndefined(args, 'verbose');
 
 	const waitForDebugger = validatePortNumber(args.waitForDebugger);
 
@@ -436,7 +447,8 @@ async function cliMain(): Promise<void> {
 			headless,
 			hideServerLog,
 			permissions,
-			extensionPaths
+			extensionPaths,
+			verbose
 		})
 	} else {
 		open({
@@ -450,7 +462,8 @@ async function cliMain(): Promise<void> {
 			headless,
 			hideServerLog,
 			permissions,
-			extensionPaths
+			extensionPaths,
+			verbose
 		})
 	}
 }
