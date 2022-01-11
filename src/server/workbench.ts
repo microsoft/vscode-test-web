@@ -56,11 +56,17 @@ class Workbench {
 	}
 
 
-	async renderCallback(): Promise<string> {
-		return await fetch(`${this.baseUrl}/out/vs/code/browser/workbench/callback.html`);
+	async renderCallback(requestId: string, uri: URI): Promise<string> {
+		const content = await fetch(`${this.baseUrl}/out/vs/code/browser/workbench/callback.html`);
+		const values: { [key: string]: string } = {
+			CALLBACK_ID: requestId,
+			CALLBACK_URI: JSON.stringify(uri.toJSON())
+		};
+		return content.replace(/\{\{([^}]+)\}\}/g, (_, key) => values[key] ?? 'undefined');
 	}
 }
 
+function valueOrFirst<T>(value: T | T[]): T;
 function valueOrFirst<T>(value: T | T[] | undefined): T | undefined {
 	return Array.isArray(value) ? value[0] : value;
 }
@@ -131,8 +137,6 @@ export default function (config: IConfig): Router.Middleware {
 		await next();
 	});
 
-	const callbacks = new Map<string, URI>();
-
 	router.get('/callback', async ctx => {
 		const {
 			'vscode-requestId': vscodeRequestId,
@@ -147,36 +151,31 @@ export default function (config: IConfig): Router.Middleware {
 			return ctx.throw(400);
 		}
 
+		const segments: string[] = [];
+		if (vscodeQuery) {
+			segments.push(valueOrFirst(vscodeQuery));
+		}
+		for (const p in ctx.query) {
+			if (!/^vscode-(requestId|scheme|authority|path|query|fragment)$/.test(p)) {
+				const val = ctx.query[p];
+				if (Array.isArray(val)) {
+					val.forEach(v => segments.push(`${p}=${v}`));
+				} else {
+					segments.push(`${p}=${val}`)
+				}
+			}
+		}
+
 		const requestId = valueOrFirst(vscodeRequestId)!;
 		const uri = URI.from({
-			scheme: valueOrFirst(vscodeScheme)!,
+			scheme: valueOrFirst(vscodeScheme),
 			authority: valueOrFirst(vscodeAuthority),
 			path: valueOrFirst(vscodePath),
-			query: valueOrFirst(vscodeQuery),
+			query: segments.join('&'),
 			fragment: valueOrFirst(vscodeFragment),
 		});
 
-		callbacks.set(requestId, uri);
-
-		ctx.body = await ctx.state.workbench.renderCallback();
-	});
-
-	router.get('/fetch-callback', async ctx => {
-		const { 'vscode-requestId': vscodeRequestId } = ctx.query;
-
-		if (!vscodeRequestId) {
-			return ctx.throw(400);
-		}
-
-		const requestId = valueOrFirst(vscodeRequestId)!;
-		const uri = callbacks.get(requestId);
-
-		if (!uri) {
-			return ctx.throw(400);
-		}
-
-		callbacks.delete(requestId);
-		ctx.body = uri.toJSON();
+		ctx.body = await ctx.state.workbench.renderCallback(requestId, uri);
 	});
 
 	router.get('/', async ctx => {
