@@ -56,21 +56,10 @@ class Workbench {
 	}
 
 
-	async renderCallback(requestId: string, uri: URI): Promise<string> {
-		const content = await fetch(`${this.baseUrl}/out/vs/code/browser/workbench/callback.html`);
-		const values: { [key: string]: string } = {
-			CALLBACK_ID: requestId,
-			CALLBACK_URI: JSON.stringify(uri.toJSON())
-		};
-		return content.replace(/\{\{([^}]+)\}\}/g, (_, key) => values[key] ?? 'undefined');
+	async renderCallback(): Promise<string> {
+		return await fetch(`${this.baseUrl}/out/vs/code/browser/workbench/callback.html`);
 	}
 }
-
-function valueOrFirst<T>(value: T | T[]): T;
-function valueOrFirst<T>(value: T | T[] | undefined): T | undefined {
-	return Array.isArray(value) ? value[0] : value;
-}
-
 
 async function getWorkbenchOptions(
 	ctx: { protocol: string; host: string },
@@ -138,44 +127,7 @@ export default function (config: IConfig): Router.Middleware {
 	});
 
 	router.get('/callback', async ctx => {
-		const {
-			'vscode-requestId': vscodeRequestId,
-			'vscode-scheme': vscodeScheme,
-			'vscode-authority': vscodeAuthority,
-			'vscode-path': vscodePath,
-			'vscode-query': vscodeQuery,
-			'vscode-fragment': vscodeFragment,
-		} = ctx.query;
-
-		if (!vscodeRequestId || !vscodeScheme || !vscodeAuthority) {
-			return ctx.throw(400);
-		}
-
-		const segments: string[] = [];
-		if (vscodeQuery) {
-			segments.push(valueOrFirst(vscodeQuery));
-		}
-		for (const p in ctx.query) {
-			if (!/^vscode-(requestId|scheme|authority|path|query|fragment)$/.test(p)) {
-				const val = ctx.query[p];
-				if (Array.isArray(val)) {
-					val.forEach(v => segments.push(`${p}=${v}`));
-				} else {
-					segments.push(`${p}=${val}`)
-				}
-			}
-		}
-
-		const requestId = valueOrFirst(vscodeRequestId)!;
-		const uri = URI.from({
-			scheme: valueOrFirst(vscodeScheme),
-			authority: valueOrFirst(vscodeAuthority),
-			path: valueOrFirst(vscodePath),
-			query: segments.join('&'),
-			fragment: valueOrFirst(vscodeFragment),
-		});
-
-		ctx.body = await ctx.state.workbench.renderCallback(requestId, uri);
+		ctx.body = await ctx.state.workbench.renderCallback();
 	});
 
 	router.get('/', async ctx => {
