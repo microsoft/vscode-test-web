@@ -5,6 +5,7 @@
 
 import { promises as fs } from 'fs';
 import * as path from 'path';
+
 export interface URIComponents {
 	scheme: string;
 	authority: string;
@@ -48,4 +49,24 @@ export async function scanForExtensions(
 
 	await processFolder('');
 	return result;
+}
+
+/** running from VS Code sources */
+
+export interface IScannedBuiltinExtension {
+	extensionPath: string; // name of the folder
+	packageJSON: any;
+	packageNLS?: any;
+	readmePath?: string;
+	changelogPath?: string;
+}
+
+export const prebuiltExtensionsLocation = '.build/builtInExtensions';
+
+export async function getScannedBuiltinExtensions(vsCodeDevLocation: string): Promise<IScannedBuiltinExtension[]> {
+	// use the build utility as to not duplicate the code
+	const extensionsUtil = await import(path.join(vsCodeDevLocation, 'build', 'lib', 'extensions.js'));
+
+	return extensionsUtil.scanBuiltinExtensions(path.join(vsCodeDevLocation, 'extensions'))
+		.concat(extensionsUtil.scanBuiltinExtensions(path.join(vsCodeDevLocation, prebuiltExtensionsLocation)));
 }

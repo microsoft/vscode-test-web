@@ -9,8 +9,8 @@ import { URI } from 'vscode-uri';
 import * as Router from '@koa/router';
 
 import { IConfig } from './main';
-import { scanForExtensions, URIComponents } from './extensions';
-import { fetch, fetchJSON } from './download';
+import { getScannedBuiltinExtensions, IScannedBuiltinExtension, scanForExtensions, URIComponents } from './extensions';
+import { fetch } from './download';
 import { fsProviderExtensionPrefix, fsProviderFolderUri } from './mounts';
 
 interface IDevelopmentOptions {
@@ -28,7 +28,7 @@ function asJSON(value: unknown): string {
 }
 
 class Workbench {
-	constructor(readonly baseUrl: string, readonly dev: boolean, private readonly builtInExtensions: unknown[] = []) { }
+	constructor(readonly baseUrl: string, readonly dev: boolean, private readonly builtInExtensions: IScannedBuiltinExtension[] = []) { }
 
 	async render(workbenchWebConfiguration: IWorkbenchOptions): Promise<string> {
 		const values: { [key: string]: string } = {
@@ -110,14 +110,9 @@ export default function (config: IConfig): Router.Middleware {
 	const router = new Router<{ workbench: Workbench }>();
 
 	router.use(async (ctx, next) => {
-		if (ctx.query['dev'] || config.build.type === 'sources') {
-			try {
-				const builtInExtensions = await fetchJSON<unknown[]>('http://localhost:8080/builtin');
-				ctx.state.workbench = new Workbench('http://localhost:8080/static', true, builtInExtensions);
-			} catch (err) {
-				console.log(err);
-				ctx.throw('Could not connect to localhost:8080, make sure you start `yarn web`', 400);
-			}
+		if (config.build.type === 'sources') {
+			const builtInExtensions = await getScannedBuiltinExtensions(config.build.location);
+			ctx.state.workbench = new Workbench(`${ctx.protocol}://${ctx.host}/static/sources`, true, builtInExtensions);
 		} else if (config.build.type === 'static') {
 			ctx.state.workbench = new Workbench(`${ctx.protocol}://${ctx.host}/static/build`, false);
 		} else if (config.build.type === 'cdn') {
@@ -134,9 +129,6 @@ export default function (config: IConfig): Router.Middleware {
 		const options = await getWorkbenchOptions(ctx, config);
 		ctx.body = await ctx.state.workbench.render(options);
 	});
-
-	//mountAPI(config, router);
-
 
 	return router.routes();
 }

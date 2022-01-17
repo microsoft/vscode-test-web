@@ -14,7 +14,7 @@ import * as minimist from 'minimist';
 import * as path from 'path';
 
 export type BrowserType = 'chromium' | 'firefox' | 'webkit';
-export type VSCodeVersion = 'insiders' | 'stable' | 'sources';
+export type VSCodeVersion = 'insiders' | 'stable';
 
 export interface Options {
 
@@ -47,9 +47,10 @@ export interface Options {
 	 * The VS Code version to use. Valid versions are:
 	 * - `'stable'` : The latest stable build
 	 * - `'insiders'` : The latest insiders build
-	 * - `'sources'`: From sources, served at localhost:8080 by running `yarn web` in the vscode repo
 	 *
 	 * Currently defaults to `insiders`, which is latest stable insiders.
+	 *
+	 * The setting is ignored when a vsCodeDevPath is provided.
 	 */
 	version?: VSCodeVersion;
 
@@ -98,6 +99,10 @@ export interface Options {
 	 */
 	extensionPaths?: string[];
 
+	/**
+	 * Absolute path pointing to VS Code sources to use.
+	 */
+	vsCodeDevPath?: string;
 
 	verbose?: boolean;
 }
@@ -115,7 +120,7 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 	const config: IConfig = {
 		extensionDevelopmentPath: options.extensionDevelopmentPath,
 		extensionTestsPath: options.extensionTestsPath,
-		build: await getBuild(options.version),
+		build: await getBuild(options.version, options.vsCodeDevPath),
 		folderUri: options.folderUri,
 		folderMountPath: options.folderPath,
 		hideServerLog: true,
@@ -150,9 +155,12 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 	});
 }
 
-async function getBuild(version: VSCodeVersion | undefined): Promise<Static | Sources> {
-	if (version === 'sources') {
-		return { type: 'sources' };
+async function getBuild(version: VSCodeVersion | undefined, vsCodeDevPath: string | undefined): Promise<Static | Sources> {
+	if (vsCodeDevPath) {
+		return {
+			type: 'sources',
+			location: vsCodeDevPath
+		};
 	}
 	return await downloadAndUnzipVSCode(version === 'stable' ? 'stable' : 'insider');
 }
@@ -161,7 +169,7 @@ export async function open(options: Options): Promise<Disposable> {
 	const config: IConfig = {
 		extensionDevelopmentPath: options.extensionDevelopmentPath,
 		extensionTestsPath: options.extensionTestsPath,
-		build: await getBuild(options.version),
+		build: await getBuild(options.version, options.vsCodeDevPath),
 		folderUri: options.folderUri,
 		folderMountPath: options.folderPath,
 		extensionPaths: options.extensionPaths
@@ -333,11 +341,19 @@ async function validatePath(loc: string, isFile?: boolean): Promise<string> {
 	return loc;
 }
 
-function validateVersion(version: unknown): VSCodeVersion | undefined {
-	if (version === undefined || ((typeof version === 'string') && ['insiders', 'stable', 'sources'].includes(version))) {
+function validateVersion(version: unknown, vsCodeDevPath: string | undefined): VSCodeVersion | undefined {
+	if (vsCodeDevPath && version) {
+		console.log(`Sources folder is provided as input, version is ignored.`);
+		return undefined;
+	}
+	if (version === undefined || ((typeof version === 'string') && ['insiders', 'stable'].includes(version))) {
 		return version as VSCodeVersion;
 	}
-	console.log(`Invalid version.`);
+	if (version === 'sources') {
+		console.log(`Instead of version=sources use 'sourcesPath' with the location of the VS Code repository.`);
+	} else {
+		console.log(`Invalid version.`);
+	}
 	showHelp();
 	process.exit(-1);
 }
@@ -364,6 +380,7 @@ interface CommandLineOptions {
 	'folder-uri'?: string;
 	permission?: string | string[];
 	extensionPath: string | string[];
+	sourcesPath: string;
 	help?: boolean;
 	verbose?: boolean;
 }
@@ -373,7 +390,8 @@ function showHelp() {
 	console.log(`  --browserType 'chromium' | 'firefox' | 'webkit': The browser to launch. [Optional, default 'chromium']`)
 	console.log(`  --extensionDevelopmentPath path: A path pointing to an extension under development to include. [Optional]`);
 	console.log(`  --extensionTestsPath path: A path to a test module to run. [Optional]`);
-	console.log(`  --version 'insiders' | 'stable' | 'sources' [Optional, default 'insiders']`);
+	console.log(`  --version 'insiders' | 'stable' [Optional, default 'insiders', ignored when running from sources]`);
+	console.log(`  --sourcesPath path: If provided, running from VS Code sources at the given location [Optional]`);
 	console.log(`  --open-devtools: If set, opens the dev tools  [Optional]`);
 	console.log(`  --headless: Whether to hide the browser. Defaults to true when an extensionTestsPath is provided, otherwise false. [Optional]`);
 	console.log(`  --hideServerLog: Whether to hide the server log. Defaults to true when an extensionTestsPath is provided, otherwise false. [Optional]`);
@@ -389,13 +407,13 @@ async function cliMain(): Promise<void> {
 	console.log(`${manifest.name}: ${manifest.version}`);
 
 	const options: minimist.Opts = {
-		string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browserType', 'version', 'waitForDebugger', 'folder-uri', 'permission', 'extensionPath'],
+		string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browserType', 'version', 'waitForDebugger', 'folder-uri', 'permission', 'extensionPath', 'sourcesPath'],
 		boolean: ['open-devtools', 'headless', 'hideServerLog', 'help', 'verbose'],
 		unknown: arg => {
 			if (arg.startsWith('-')) {
 				console.log(`Unknown argument ${arg}`);
 				showHelp();
-				return false;
+				process.exit();
 			}
 			return true;
 		}
@@ -410,7 +428,8 @@ async function cliMain(): Promise<void> {
 	const extensionTestsPath = await validatePathOrUndefined(args, 'extensionTestsPath', true);
 	const extensionDevelopmentPath = await validatePathOrUndefined(args, 'extensionDevelopmentPath');
 	const extensionPaths = await valdiateExtensionPaths(args.extensionPath);
-	const version = validateVersion(args.version);
+	const vsCodeDevPath = await validatePathOrUndefined(args, 'sourcesPath');
+	const version = validateVersion(args.version, vsCodeDevPath);
 	const devTools = validateBooleanOrUndefined(args, 'open-devtools');
 	const headless = validateBooleanOrUndefined(args, 'headless');
 	const permissions = valdiatePermissions(args.permission);
@@ -448,6 +467,7 @@ async function cliMain(): Promise<void> {
 			hideServerLog,
 			permissions,
 			extensionPaths,
+			vsCodeDevPath,
 			verbose
 		})
 	} else {
@@ -463,6 +483,7 @@ async function cliMain(): Promise<void> {
 			hideServerLog,
 			permissions,
 			extensionPaths,
+			vsCodeDevPath,
 			verbose
 		})
 	}

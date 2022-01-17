@@ -17,6 +17,7 @@ export interface IConfig {
 
 export interface Sources {
 	type: 'sources';
+	location: string;
 }
 
 export interface Static {
