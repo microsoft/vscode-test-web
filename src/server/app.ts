@@ -7,10 +7,11 @@ import * as Koa from 'koa';
 import * as morgan from 'koa-morgan';
 import * as kstatic from 'koa-static';
 import * as kmount from 'koa-mount';
+import { join } from 'path';
 import { IConfig } from './main';
 import workbench from './workbench';
-import * as path from 'path';
 import { configureMounts } from './mounts';
+import { prebuiltExtensionsLocation } from './extensions';
 
 export default async function createApp(config: IConfig): Promise<Koa> {
 	const app = new Koa();
@@ -25,15 +26,20 @@ export default async function createApp(config: IConfig): Promise<Koa> {
 		return next();
 	});
 
-	app.use(kmount('/static', kstatic(path.join(__dirname, '../static'))));
+	const serveOptions = { hidden: true };
 
 	if (config.extensionDevelopmentPath) {
 		console.log('Serving dev extensions from ' + config.extensionDevelopmentPath);
-		app.use(kmount('/static/devextensions', kstatic(config.extensionDevelopmentPath, { hidden: true })));
+		app.use(kmount('/static/devextensions', kstatic(config.extensionDevelopmentPath, serveOptions)));
 	}
 
 	if (config.build.type === 'static') {
-		app.use(kmount('/static/build', kstatic(config.build.location, { hidden: true })));
+		app.use(kmount('/static/build', kstatic(config.build.location, serveOptions)));
+	} else if (config.build.type === 'sources') {
+		app.use(kmount('/static/sources', kstatic(config.build.location, serveOptions)));
+		app.use(kmount('/static/sources', kstatic(join(config.build.location, 'resources', 'server'), serveOptions))); // for manifest.json, favicon and code icons.
+		// built-in extension are at 'extensions` as well as prebuilt extensions dowloaded from the marketplace
+		app.use(kmount(`/static/sources/extensions`, kstatic(join(config.build.location, prebuiltExtensionsLocation), serveOptions)));
 	}
 
 	configureMounts(config, app);
@@ -41,7 +47,7 @@ export default async function createApp(config: IConfig): Promise<Koa> {
 	if (config.extensionPaths) {
 		config.extensionPaths.forEach((extensionPath, index) => {
 			console.log('Serving additional built-in extensions from ' + extensionPath);
-			app.use(kmount(`/static/extensions/${index}`, kstatic(extensionPath, { hidden: true })));
+			app.use(kmount(`/static/extensions/${index}`, kstatic(extensionPath, serveOptions)));
 		});
 	}
 
