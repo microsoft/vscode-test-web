@@ -70,7 +70,7 @@ CLI options:
  | --browserType | The browser to launch: `chromium` (default), `firefox` or `webkit` |
 | --extensionDevelopmentPath | A path pointing to an extension under development to include. |
 | --extensionTestsPath |  A path to a test module to run. |
-| --version | `insiders` (default),  or `stable`. Ignored when sourcesPath is provided. |
+| --quality | `insiders` (default),  or `stable`. Ignored when sourcesPath is provided. |
 | --sourcesPath | If set, runs from VS Code sources located at the given path. Make sure the sources and extensions are compiled (`yarn compile` and `yarn compile-web`) |
 | --open-devtools|  If set, opens the dev tools  |
 | --headless|  If set, hides the browser. Defaults to true when an extensionTestsPath is provided, otherwise false. |

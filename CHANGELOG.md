@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.16
+ * new option `--sourcesPath`: If provided, runs the server from VS Code sources at the given location.
+ * option `--version` is deprecated and replaced with `quality`. Supported values: `stable`, `insiders`. Instead of `sources` use `--insiders`
+
 ## 0.0.14
  * new option `--extensionPath` : A path pointing to a folder containing additional extensions to include. Argument can be provided multiple times.
  * new option `--permission`: Permission granted to the opened browser: e.g. clipboard-read, clipboard-write. See full list of options [here](https://playwright.dev/docs/1.14/emulation#permissions). Argument can be provided multiple times.
