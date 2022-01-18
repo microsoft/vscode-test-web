@@ -55,7 +55,7 @@ export interface Options {
 	quality?: VSCodeQuality;
 
 	/**
-	 * Deprecated. Use `quality` or `vsCodeDevPath` instead.
+	 * @deprecated. Use `quality` or `vsCodeDevPath` instead.
 	 */
 	version?: string;
 
@@ -109,7 +109,20 @@ export interface Options {
 	 */
 	vsCodeDevPath?: string;
 
+	/**
+	 * Print out more information while the server is running, e.g. the console output in the browser
+	 */
 	verbose?: boolean;
+
+	/**
+	 * The port to start the server on. Defaults to `3000`.
+	 */
+	port?: number;
+
+	/**
+	 * The host name to start the server on. Defaults to `localhost`
+	 */
+	host?: string;
 }
 
 export interface Disposable {
@@ -128,16 +141,18 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 		build: await getBuild(options),
 		folderUri: options.folderUri,
 		folderMountPath: options.folderPath,
-		hideServerLog: true,
+		hideServerLog: options.hideServerLog ?? true,
 		extensionPaths: options.extensionPaths
 	};
 
-	const port = 3000;
-	const server = await runServer(port, config);
+
+	const host = options.host ?? 'localhost';
+	const port = options.port ?? 3000;
+	const server = await runServer(host, port, config);
 
 	return new Promise(async (s, e) => {
 
-		const endpoint = `http://localhost:${port}`;
+		const endpoint = `http://${host}:${port}`;
 		const context = await openBrowser(endpoint, options);
 		context.once('close', () => server.close());
 		await context.exposeFunction('codeAutomationLog', (type: 'warn' | 'error' | 'info', args: unknown[]) => {
@@ -178,13 +193,15 @@ export async function open(options: Options): Promise<Disposable> {
 		build: await getBuild(options),
 		folderUri: options.folderUri,
 		folderMountPath: options.folderPath,
+		hideServerLog: options.hideServerLog ?? true,
 		extensionPaths: options.extensionPaths
 	};
 
-	const port = 3000;
-	const server = await runServer(port, config);
+	const host = options.host ?? 'localhost';
+	const port = options.port ?? 3000;
+	const server = await runServer(host, port, config);
 
-	const endpoint = `http://localhost:${port}`;
+	const endpoint = `http://${host}:${port}`;
 	const context = await openBrowser(endpoint, options);
 	context.once('close', () => server.close());
 
@@ -383,32 +400,38 @@ function validatePortNumber(port: unknown): number | undefined {
 interface CommandLineOptions {
 	browserType?: string;
 	extensionDevelopmentPath?: string;
-	extensionTestsPath: string;
-	type?: string;
+	extensionTestsPath?: string;
+	quality?: string;
+	sourcesPath?: string;
 	'open-devtools'?: boolean;
 	headless?: boolean;
 	hideServerLog?: boolean;
-	'folder-uri'?: string;
 	permission?: string | string[];
-	extensionPath: string | string[];
-	sourcesPath: string;
-	help?: boolean;
+	'folder-uri'?: string;
+	extensionPath?: string | string[];
+	host?: string;
+	port?: string;
 	verbose?: boolean;
+	help?: boolean;
 }
 
 function showHelp() {
 	console.log('Usage:');
-	console.log(`  --browserType 'chromium' | 'firefox' | 'webkit': The browser to launch. [Optional, default 'chromium']`)
+	console.log(`  --browserType 'chromium' | 'firefox' | 'webkit': The browser to launch. [Optional, defaults to 'chromium']`)
 	console.log(`  --extensionDevelopmentPath path: A path pointing to an extension under development to include. [Optional]`);
 	console.log(`  --extensionTestsPath path: A path to a test module to run. [Optional]`);
 	console.log(`  --quality 'insiders' | 'stable' [Optional, default 'insiders', ignored when running from sources]`);
 	console.log(`  --sourcesPath path: If provided, running from VS Code sources at the given location [Optional]`);
 	console.log(`  --open-devtools: If set, opens the dev tools  [Optional]`);
 	console.log(`  --headless: Whether to hide the browser. Defaults to true when an extensionTestsPath is provided, otherwise false. [Optional]`);
-	console.log(`  --hideServerLog: Whether to hide the server log. Defaults to true when an extensionTestsPath is provided, otherwise false. [Optional]`);
 	console.log(`  --permission: Permission granted in the opened browser: e.g. 'clipboard-read', 'clipboard-write':  [Optional, Multiple]`);
 	console.log(`  --folder-uri: workspace to open VS Code on. Ignored when folderPath is provided [Optional]`);
 	console.log(`  --extensionPath: A path pointing to a folder containing additional extensions to include [Optional, Multiple]`);
+	console.log(`  --host: The host name the server is opened on  [Optional, defaults to localhost]`);
+	console.log(`  --port: The port the server is opened on  [Optional, defaults to 3000]`);
+	console.log(`  --open-devtools: If set, opens the dev tools  [Optional]`);
+	console.log(`  --verbose: If set, prints out more information when running the server  [Optional]`);
+	console.log(`  --hideServerLog: Whether to hide the server log. Defaults to true when an extensionTestsPath is provided, otherwise false. [Optional]`);
 	console.log(`  folderPath. A local folder to open VS Code on. The folder content will be available as a virtual file system. [Optional]`);
 }
 
@@ -418,7 +441,7 @@ async function cliMain(): Promise<void> {
 	console.log(`${manifest.name}: ${manifest.version}`);
 
 	const options: minimist.Opts = {
-		string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browserType', 'quality', 'version', 'waitForDebugger', 'folder-uri', 'permission', 'extensionPath', 'sourcesPath'],
+		string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browserType', 'quality', 'version', 'waitForDebugger', 'folder-uri', 'permission', 'extensionPath', 'sourcesPath', 'host', 'port'],
 		boolean: ['open-devtools', 'headless', 'hideServerLog', 'help', 'verbose'],
 		unknown: arg => {
 			if (arg.startsWith('-')) {
@@ -446,6 +469,8 @@ async function cliMain(): Promise<void> {
 	const permissions = valdiatePermissions(args.permission);
 	const hideServerLog = validateBooleanOrUndefined(args, 'hideServerLog');
 	const verbose = validateBooleanOrUndefined(args, 'verbose');
+	const port = validatePortNumber(args.port);
+	const host = validateStringOrUndefined(args, 'host');
 
 	const waitForDebugger = validatePortNumber(args.waitForDebugger);
 
@@ -479,7 +504,9 @@ async function cliMain(): Promise<void> {
 			permissions,
 			extensionPaths,
 			vsCodeDevPath,
-			verbose
+			verbose,
+			host,
+			port
 		})
 	} else {
 		open({
@@ -495,7 +522,9 @@ async function cliMain(): Promise<void> {
 			permissions,
 			extensionPaths,
 			vsCodeDevPath,
-			verbose
+			verbose,
+			host,
+			port
 		})
 	}
 }

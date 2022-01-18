@@ -6,13 +6,13 @@
 import createApp from './app';
 
 export interface IConfig {
-	readonly extensionPaths?: string[];
-	readonly extensionDevelopmentPath?: string;
-	readonly extensionTestsPath?: string;
+	readonly extensionPaths: string[] | undefined;
+	readonly extensionDevelopmentPath: string | undefined;
+	readonly extensionTestsPath: string | undefined;
 	readonly build: Sources | Static | CDN;
-	readonly folderUri?: string;
-	readonly folderMountPath?: string;
-	readonly hideServerLog?: boolean;
+	readonly folderUri: string | undefined;
+	readonly folderMountPath: string | undefined;
+	readonly hideServerLog: boolean;
 }
 
 export interface Sources {
@@ -36,10 +36,10 @@ export interface IServer {
 	close(): void;
 }
 
-export async function runServer(port: number | undefined, config: IConfig): Promise<IServer> {
+export async function runServer(host: string, port: number | undefined, config: IConfig): Promise<IServer> {
 	const app = await createApp(config);
-	const server = app.listen(port);
-	console.log(`Listening on http://localhost:${port}`);
+	const server = app.listen(port, host);
+	console.log(`Listening on http://${host}:${port}`);
 	return server;
 }
 

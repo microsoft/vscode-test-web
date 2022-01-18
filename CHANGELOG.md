@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.17
+ * new options `--host` and `--port`: If provided runs the server from the given host and port.
+ * new option `--verbose` to print out the browser console log.
+
 ## 0.0.16
  * new option `--sourcesPath`: If provided, runs the server from VS Code sources at the given location.
  * option `--version` is deprecated and replaced with `quality`. Supported values: `stable`, `insiders`. Instead of `sources` use `--insiders`
