@@ -13,13 +13,13 @@ import * as playwright from 'playwright';
 import * as minimist from 'minimist';
 import * as path from 'path';
 
-export type BrowserType = 'chromium' | 'firefox' | 'webkit';
+export type BrowserType = 'chromium' | 'firefox' | 'webkit' | 'none';
 export type VSCodeQuality = 'insiders' | 'stable';
 
 export interface Options {
 
 	/**
-	 * Browser to run the test against: 'chromium' | 'firefox' | 'webkit'
+	 * Browser to open: 'chromium' | 'firefox' | 'webkit' | 'none'.
 	 */
 	browserType: BrowserType;
 
@@ -154,24 +154,29 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 
 		const endpoint = `http://${host}:${port}`;
 		const context = await openBrowser(endpoint, options);
-		context.once('close', () => server.close());
-		await context.exposeFunction('codeAutomationLog', (type: 'warn' | 'error' | 'info', args: unknown[]) => {
-			console[type](...args);
-		});
+		if (context) {
+			context.once('close', () => server.close());
+			await context.exposeFunction('codeAutomationLog', (type: 'warn' | 'error' | 'info', args: unknown[]) => {
+				console[type](...args);
+			});
 
-		await context.exposeFunction('codeAutomationExit', async (code: number) => {
-			try {
-				await context.browser()?.close();
-			} catch (error) {
-				console.error(`Error when closing browser: ${error}`);
-			}
+			await context.exposeFunction('codeAutomationExit', async (code: number) => {
+				try {
+					await context.browser()?.close();
+				} catch (error) {
+					console.error(`Error when closing browser: ${error}`);
+				}
+				server.close();
+				if (code === 0) {
+					s();
+				} else {
+					e(new Error('Test failed'));
+				}
+			});
+		} else {
 			server.close();
-			if (code === 0) {
-				s();
-			} else {
-				e(new Error('Test failed'));
-			}
-		});
+			e(new Error('Can not run test as opening of browser failed.'));
+		}
 	});
 }
 
@@ -203,12 +208,12 @@ export async function open(options: Options): Promise<Disposable> {
 
 	const endpoint = `http://${host}:${port}`;
 	const context = await openBrowser(endpoint, options);
-	context.once('close', () => server.close());
+	context?.once('close', () => server.close());
 
 	return {
 		dispose: () => {
 			server.close();
-			context.browser()?.close();
+			context?.browser()?.close();
 		}
 	}
 
@@ -217,7 +222,17 @@ export async function open(options: Options): Promise<Disposable> {
 const width = 1200;
 const height = 800;
 
-async function openBrowser(endpoint: string, options: Options): Promise<playwright.BrowserContext> {
+async function openBrowser(endpoint: string, options: Options): Promise<playwright.BrowserContext | undefined> {
+	if (options.browserType === 'none') {
+		return undefined;
+	}
+
+	const browserType = await playwright[options.browserType];
+	if (!browserType) {
+		console.error(`Can not open browser type: ${options.browserType}`);
+		return undefined;
+	}
+
 	const args: string[] = []
 	if (process.platform === 'linux' && options.browserType === 'chromium') {
 		args.push('--no-sandbox');
@@ -229,7 +244,7 @@ async function openBrowser(endpoint: string, options: Options): Promise<playwrig
 
 	const headless = options.headless ?? options.extensionTestsPath !== undefined;
 
-	const browser = await playwright[options.browserType].launch({ headless, args, devtools: options.devTools });
+	const browser = await browserType.launch({ headless, args, devtools: options.devTools });
 	const context = await browser.newContext();
 	if (options.permissions) {
 		context.grantPermissions(options.permissions);
@@ -296,7 +311,7 @@ function valdiateBrowserType(browserType: unknown): BrowserType {
 	if (browserType === undefined) {
 		return 'chromium';
 	}
-	if ((typeof browserType === 'string') && ['chromium', 'firefox', 'webkit'].includes(browserType)) {
+	if ((typeof browserType === 'string') && ['chromium', 'firefox', 'webkit', 'none'].includes(browserType)) {
 		return browserType as BrowserType;
 	}
 	console.log(`Invalid browser type.`);
@@ -417,7 +432,7 @@ interface CommandLineOptions {
 
 function showHelp() {
 	console.log('Usage:');
-	console.log(`  --browserType 'chromium' | 'firefox' | 'webkit': The browser to launch. [Optional, defaults to 'chromium']`)
+	console.log(`  --browserType 'chromium' | 'firefox' | 'webkit' | 'none': The browser to launch. [Optional, defaults to 'chromium']`)
 	console.log(`  --extensionDevelopmentPath path: A path pointing to an extension under development to include. [Optional]`);
 	console.log(`  --extensionTestsPath path: A path to a test module to run. [Optional]`);
 	console.log(`  --quality 'insiders' | 'stable' [Optional, default 'insiders', ignored when running from sources]`);
@@ -507,6 +522,9 @@ async function cliMain(): Promise<void> {
 			verbose,
 			host,
 			port
+		}).catch(e => {
+			console.log(e.message);
+			process.exit(1);
 		})
 	} else {
 		open({

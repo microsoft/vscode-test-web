@@ -67,7 +67,7 @@ CLI options:
 
 |Option|Argument Description|
 |-----|-----|
-| --browserType | The browser to launch: `chromium` (default), `firefox` or `webkit` |
+| --browserType | The browser to launch: `chromium` (default), `firefox`, `webkit` or `none` |
 | --extensionDevelopmentPath | A path pointing to an extension under development to include. |
 | --extensionTestsPath | A path to a test module to run. |
 | --quality | `insiders` (default),  or `stable`. Ignored when sourcesPath is provided. |

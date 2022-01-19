@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.0.18
+ * new option `--browserType none` to start the server without opening a browser.
+
 ## 0.0.17
  * new options `--host` and `--port`: If provided runs the server from the given host and port.
  * new option `--verbose` to print out the browser console log.
