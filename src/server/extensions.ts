@@ -5,6 +5,7 @@
 
 import { promises as fs } from 'fs';
 import * as path from 'path';
+import { fileExists } from './download';
 
 export interface URIComponents {
 	scheme: string;
@@ -67,6 +68,19 @@ export async function getScannedBuiltinExtensions(vsCodeDevLocation: string): Pr
 	// use the build utility as to not duplicate the code
 	const extensionsUtil = await import(path.join(vsCodeDevLocation, 'build', 'lib', 'extensions.js'));
 
-	return extensionsUtil.scanBuiltinExtensions(path.join(vsCodeDevLocation, 'extensions'))
-		.concat(extensionsUtil.scanBuiltinExtensions(path.join(vsCodeDevLocation, prebuiltExtensionsLocation)));
+	const localExtensions : IScannedBuiltinExtension[] =  extensionsUtil.scanBuiltinExtensions(path.join(vsCodeDevLocation, 'extensions'));
+	const prebuiltExtensions : IScannedBuiltinExtension[] =  extensionsUtil.scanBuiltinExtensions(path.join(vsCodeDevLocation, 'prebuiltExtensionsLocation'));
+	for (const ext of localExtensions) {
+		let browserMain : string | undefined = ext.packageJSON.browser;
+		if (browserMain) {
+			if (!browserMain.endsWith('.js')) {
+				browserMain = browserMain + '.js';
+			}
+			const browserMainLocation = path.join(vsCodeDevLocation, 'extensions', ext.extensionPath, browserMain);
+			if (!await fileExists(browserMainLocation)) {
+				console.log(`${browserMainLocation} not found. Make sure all extensions are compiled (use 'yarn watch-web').`);
+			}
+		}
+	}
+	return localExtensions.concat(prebuiltExtensions);
 }

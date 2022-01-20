@@ -36,8 +36,10 @@ export default async function createApp(config: IConfig): Promise<Koa> {
 	if (config.build.type === 'static') {
 		app.use(kmount('/static/build', kstatic(config.build.location, serveOptions)));
 	} else if (config.build.type === 'sources') {
+		console.log('Serving VS Code sources from ' + config.build.location);
 		app.use(kmount('/static/sources', kstatic(config.build.location, serveOptions)));
-		app.use(kmount('/static/sources', kstatic(join(config.build.location, 'resources', 'server'), serveOptions))); // for manifest.json, favicon and code icons.
+		app.use(kmount('/', kstatic(join(config.build.location, 'resources', 'server'), serveOptions))); // for manifest.json, favicon and code icons.
+
 		// built-in extension are at 'extensions` as well as prebuilt extensions dowloaded from the marketplace
 		app.use(kmount(`/static/sources/extensions`, kstatic(join(config.build.location, prebuiltExtensionsLocation), serveOptions)));
 	}
