@@ -50,8 +50,8 @@ class Workbench {
 	getMain() {
 		return this.dev
 			? `<script> require(['vs/code/browser/workbench/workbench'], function() {}); </script>`
-			: `<script src="${this.baseUrl}/out/vs/workbench/workbench.web.api.nls.js"></script>`
-			+ `<script src="${this.baseUrl}/out/vs/workbench/workbench.web.api.js"></script>`
+			: `<script src="${this.baseUrl}/out/vs/workbench/workbench.web.main.nls.js"></script>`
+			+ `<script src="${this.baseUrl}/out/vs/workbench/workbench.web.main.js"></script>`
 			+ `<script src="${this.baseUrl}/out/vs/code/browser/workbench/workbench.js"></script>`;
 	}
 
