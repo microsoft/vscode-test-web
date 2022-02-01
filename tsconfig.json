@@ -14,7 +14,8 @@
 		"alwaysStrict": true,
 		"skipLibCheck": true,
 		"forceConsistentCasingInFileNames": true,
-		"sourceMap": false
+		"sourceMap": false,
+		"newLine": "lf"
 	},
 	"include": [
 		"src"
