@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.0.20
+ * new option `--extensionId publisher.name[@prerelease]` to include one or more extensions
+
 ## 0.0.18
  * new option `--browserType none` to start the server without opening a browser.
 

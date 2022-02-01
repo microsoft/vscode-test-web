@@ -16,6 +16,7 @@ import * as path from 'path';
 export type BrowserType = 'chromium' | 'firefox' | 'webkit' | 'none';
 export type VSCodeQuality = 'insiders' | 'stable';
 
+export type GalleryExtension = { readonly id: string; readonly preRelease?: boolean; }
 export interface Options {
 
 	/**
@@ -105,6 +106,11 @@ export interface Options {
 	extensionPaths?: string[];
 
 	/**
+	 * List of extensions to include. The id format is ${publisher}.${name}.
+	 */
+	extensionIds?: GalleryExtension[];
+
+	/**
 	 * Absolute path pointing to VS Code sources to use.
 	 */
 	vsCodeDevPath?: string;
@@ -142,7 +148,8 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 		folderUri: options.folderUri,
 		folderMountPath: options.folderPath,
 		hideServerLog: options.hideServerLog ?? true,
-		extensionPaths: options.extensionPaths
+		extensionPaths: options.extensionPaths,
+		extensionIds: options.extensionIds
 	};
 
 
@@ -199,7 +206,8 @@ export async function open(options: Options): Promise<Disposable> {
 		folderUri: options.folderUri,
 		folderMountPath: options.folderPath,
 		hideServerLog: options.hideServerLog ?? true,
-		extensionPaths: options.extensionPaths
+		extensionPaths: options.extensionPaths,
+		extensionIds: options.extensionIds
 	};
 
 	const host = options.host ?? 'localhost';
@@ -362,6 +370,38 @@ async function valdiateExtensionPaths(extensionPaths: unknown): Promise<string[]
 	process.exit(-1);
 }
 
+const EXTENSION_IDENTIFIER_PATTERN = /^([a-z0-9A-Z][a-z0-9-A-Z]*\.[a-z0-9A-Z][a-z0-9-A-Z]*)(@prerelease)?$/;
+
+async function valdiateExtensionIds(extensionIds: unknown): Promise<GalleryExtension[] | undefined> {
+	if (extensionIds === undefined) {
+		return undefined
+	}
+	if (!Array.isArray(extensionIds)) {
+		extensionIds = [extensionIds];
+	}
+	if (Array.isArray(extensionIds)) {
+		const res: GalleryExtension[] = [];
+		for (const extensionId of extensionIds) {
+			const m = (typeof extensionId === 'string' && extensionId.match(EXTENSION_IDENTIFIER_PATTERN));
+			if (m) {
+				if (m[2]) {
+					res.push({ id: m[1], preRelease: true });
+				} else {
+					res.push({ id: m[1] });
+				}
+			} else {
+				console.log(`Invalid extension id: ${extensionId}. Format is publisher.name[@prerelease].`);
+				break;
+			}
+		}
+		return res;
+	} else {
+		console.log(`Invalid extensionId`);
+	}
+
+	showHelp();
+	process.exit(-1);
+}
 
 async function validatePath(loc: string, isFile?: boolean): Promise<string> {
 	loc = path.resolve(loc);
@@ -424,6 +464,7 @@ interface CommandLineOptions {
 	permission?: string | string[];
 	'folder-uri'?: string;
 	extensionPath?: string | string[];
+	extensionId?: string | string[];
 	host?: string;
 	port?: string;
 	verbose?: boolean;
@@ -442,6 +483,7 @@ function showHelp() {
 	console.log(`  --permission: Permission granted in the opened browser: e.g. 'clipboard-read', 'clipboard-write':  [Optional, Multiple]`);
 	console.log(`  --folder-uri: workspace to open VS Code on. Ignored when folderPath is provided [Optional]`);
 	console.log(`  --extensionPath: A path pointing to a folder containing additional extensions to include [Optional, Multiple]`);
+	console.log(`  --extensionId: The id of an extension include. The format is '\${publisher}.\${name}'. Append '@prerelease' to use a prerelease version [Optional, Multiple]`);
 	console.log(`  --host: The host name the server is opened on  [Optional, defaults to localhost]`);
 	console.log(`  --port: The port the server is opened on  [Optional, defaults to 3000]`);
 	console.log(`  --open-devtools: If set, opens the dev tools  [Optional]`);
@@ -456,7 +498,7 @@ async function cliMain(): Promise<void> {
 	console.log(`${manifest.name}: ${manifest.version}`);
 
 	const options: minimist.Opts = {
-		string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browserType', 'quality', 'version', 'waitForDebugger', 'folder-uri', 'permission', 'extensionPath', 'sourcesPath', 'host', 'port'],
+		string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browserType', 'quality', 'version', 'waitForDebugger', 'folder-uri', 'permission', 'extensionPath', 'extensionId', 'sourcesPath', 'host', 'port'],
 		boolean: ['open-devtools', 'headless', 'hideServerLog', 'help', 'verbose'],
 		unknown: arg => {
 			if (arg.startsWith('-')) {
@@ -477,6 +519,7 @@ async function cliMain(): Promise<void> {
 	const extensionTestsPath = await validatePathOrUndefined(args, 'extensionTestsPath', true);
 	const extensionDevelopmentPath = await validatePathOrUndefined(args, 'extensionDevelopmentPath');
 	const extensionPaths = await valdiateExtensionPaths(args.extensionPath);
+	const extensionIds = await valdiateExtensionIds(args.extensionId);
 	const vsCodeDevPath = await validatePathOrUndefined(args, 'sourcesPath');
 	const quality = validateQuality(args.quality, args.version, vsCodeDevPath);
 	const devTools = validateBooleanOrUndefined(args, 'open-devtools');
@@ -518,6 +561,7 @@ async function cliMain(): Promise<void> {
 			hideServerLog,
 			permissions,
 			extensionPaths,
+			extensionIds,
 			vsCodeDevPath,
 			verbose,
 			host,
@@ -539,6 +583,7 @@ async function cliMain(): Promise<void> {
 			hideServerLog,
 			permissions,
 			extensionPaths,
+			extensionIds,
 			vsCodeDevPath,
 			verbose,
 			host,

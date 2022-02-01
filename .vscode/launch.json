@@ -44,7 +44,8 @@
             "program": "${workspaceFolder}/out/index.js",
             "args": [
                 "--browserType=chromium",
-                "--extensionDevelopmentPath=${workspaceFolder}/sample"
+                "--extensionDevelopmentPath=${workspaceFolder}/sample",
+                "sample/test-workspace"
             ],
             "outFiles": [
                 "${workspaceFolder}/out/**/*.js"

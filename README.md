@@ -76,6 +76,7 @@ CLI options:
 | --permission | Permission granted to the opened browser: e.g. `clipboard-read`, `clipboard-write`.  See [full list of options](https://playwright.dev/docs/api/class-browsercontext#browser-context-grant-permissions). Argument can be provided multiple times.  |
 | --folder-uri | URI of the workspace to open VS Code on. Ignored when `folderPath` is provided |
 | --extensionPath | A path pointing to a folder containing additional extensions to include. Argument can be provided multiple times. |
+| --extensionId | The id of an extension include. The format is `${publisher}.${name}`. Append `@prerelease` to use the prerelease version |
 | --host | The host name the server is opened on. Defaults to `localhost` |
 | --port | The port the server is opened on. Defaults to `3000` |
 | --open-devtools | If set, opens the dev tools in the browser |

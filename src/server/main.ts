@@ -7,6 +7,7 @@ import createApp from './app';
 
 export interface IConfig {
 	readonly extensionPaths: string[] | undefined;
+	readonly extensionIds: GalleryExtensionInfo[] | undefined;
 	readonly extensionDevelopmentPath: string | undefined;
 	readonly extensionTestsPath: string | undefined;
 	readonly build: Sources | Static | CDN;
@@ -15,21 +16,26 @@ export interface IConfig {
 	readonly hideServerLog: boolean;
 }
 
+export interface GalleryExtensionInfo {
+	readonly id: string;
+	readonly preRelease?: boolean;
+}
+
 export interface Sources {
-	type: 'sources';
-	location: string;
+	readonly type: 'sources';
+	readonly location: string;
 }
 
 export interface Static {
-	type: 'static';
-	location: string;
-	quality: 'stable' | 'insider';
-	version: string;
+	readonly type: 'static';
+	readonly location: string;
+	readonly quality: 'stable' | 'insider';
+	readonly version: string;
 }
 
 export interface CDN {
-	type: 'cdn';
-	uri: string;
+	readonly type: 'cdn';
+	readonly uri: string;
 }
 
 export interface IServer {

@@ -8,7 +8,7 @@ import { promises as fs } from 'fs';
 import { URI } from 'vscode-uri';
 import * as Router from '@koa/router';
 
-import { IConfig } from './main';
+import { GalleryExtensionInfo, IConfig } from './main';
 import { getScannedBuiltinExtensions, IScannedBuiltinExtension, scanForExtensions, URIComponents } from './extensions';
 import { fetch } from './download';
 import { fsProviderExtensionPrefix, fsProviderFolderUri } from './mounts';
@@ -17,8 +17,10 @@ interface IDevelopmentOptions {
 	extensionTestsPath?: URIComponents;
 	extensions?: URIComponents[];
 }
+
+
 interface IWorkbenchOptions {
-	additionalBuiltinExtensions?: (string | URIComponents)[];
+	additionalBuiltinExtensions?: (string | URIComponents | GalleryExtensionInfo)[];
 	developmentOptions?: IDevelopmentOptions;
 	folderUri?: URIComponents;
 }
@@ -74,6 +76,13 @@ async function getWorkbenchOptions(
 				path: `/static/extensions/${index}`,
 			});
 		}));
+	}
+	if (config.extensionIds) {
+		if (!options.additionalBuiltinExtensions) {
+			options.additionalBuiltinExtensions = [];
+		}
+		
+		options.additionalBuiltinExtensions.push(...config.extensionIds);
 	}
 	if (config.extensionDevelopmentPath) {
 		const developmentOptions: IDevelopmentOptions = options.developmentOptions = {}
