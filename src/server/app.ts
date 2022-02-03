@@ -16,7 +16,7 @@ import { prebuiltExtensionsLocation } from './extensions';
 export default async function createApp(config: IConfig): Promise<Koa> {
 	const app = new Koa();
 
-	if (!config.hideServerLog) {
+	if (config.printServerLog) {
 		app.use(morgan('dev'));
 	}
 

@@ -1,5 +1,10 @@
 # Changelog
 
+
+## 0.0.22
+ * new option `--printServerLog` replacing `--hideServerLog`
+ * new option `--browser` replacing `--browserType`
+
 ## 0.0.20
  * new option `--extensionId publisher.name[@prerelease]` to include one or more extensions
 

@@ -67,21 +67,21 @@ CLI options:
 
 |Option|Argument Description|
 |-----|-----|
-| --browserType | The browser to launch: `chromium` (default), `firefox`, `webkit` or `none` |
+| --browser | The browser to launch: `chromium` (default), `firefox`, `webkit` or `none`. |
 | --extensionDevelopmentPath | A path pointing to an extension under development to include. |
 | --extensionTestsPath | A path to a test module to run. |
 | --quality | `insiders` (default),  or `stable`. Ignored when sourcesPath is provided. |
-| --sourcesPath | If set, runs the server from VS Code sources located at the given path. Make sure the sources and extensions are compiled (`yarn compile` and `yarn compile-web`) |
+| --sourcesPath | If set, runs the server from VS Code sources located at the given path. Make sure the sources and extensions are compiled (`yarn compile` and `yarn compile-web`). |
 | --headless | If set, hides the browser. Defaults to true when an extensionTestsPath is provided, otherwise false. |
-| --permission | Permission granted to the opened browser: e.g. `clipboard-read`, `clipboard-write`.  See [full list of options](https://playwright.dev/docs/api/class-browsercontext#browser-context-grant-permissions). Argument can be provided multiple times.  |
-| --folder-uri | URI of the workspace to open VS Code on. Ignored when `folderPath` is provided |
+| --permission | Permission granted to the opened browser: e.g. `clipboard-read`, `clipboard-write`.  See [full list of options](https://playwright.dev/docs/api/class-browsercontext#browser-context-grant-permissions). Argument can be provided multiple times. |
+| --folder-uri | URI of the workspace to open VS Code on. Ignored when `folderPath` is provided. |
 | --extensionPath | A path pointing to a folder containing additional extensions to include. Argument can be provided multiple times. |
-| --extensionId | The id of an extension include. The format is `${publisher}.${name}`. Append `@prerelease` to use the prerelease version |
-| --host | The host name the server is opened on. Defaults to `localhost` |
-| --port | The port the server is opened on. Defaults to `3000` |
-| --open-devtools | If set, opens the dev tools in the browser |
-| --verbose | If set, prints out more information when running the server |
-| --hideServerLog | If set, hides the server log. Defaults to true when an extensionTestsPath is provided, otherwise false. |
+| --extensionId | The id of an extension include. The format is `${publisher}.${name}`. Append `@prerelease` to use the prerelease version. |
+| --host | The host name the server is opened on. Defaults to `localhost`. |
+| --port | The port the server is opened on. Defaults to `3000`. |
+| --open-devtools | If set, opens the dev tools in the browser. |
+| --verbose | If set, prints out more information when running the server. |
+| --printServerLog | If set, prints the server access log. |
 | folderPath |  A local folder to open VS Code on. The folder content will be available as a virtual file system and opened as workspace. |
 
 Corresponding options are available in the API.

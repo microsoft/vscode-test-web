@@ -13,7 +13,7 @@ export interface IConfig {
 	readonly build: Sources | Static | CDN;
 	readonly folderUri: string | undefined;
 	readonly folderMountPath: string | undefined;
-	readonly hideServerLog: boolean;
+	readonly printServerLog: boolean;
 }
 
 export interface GalleryExtensionInfo {

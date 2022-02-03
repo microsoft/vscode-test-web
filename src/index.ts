@@ -71,9 +71,14 @@ export interface Options {
 	headless?: boolean;
 
 	/**
-	 * Do not show the server log. Defaults to `true` if a extensionTestsPath is provided, `false` otherwise.
+	 * @deprecated. Use `printServerLog` instead.
 	 */
 	hideServerLog?: boolean;
+
+	/**
+	 * If set, the server access log is printed to the console. Defaults to `false`.
+	 */
+	printServerLog?: boolean;
 
 	/**
 	 * Expose browser debugging on this port number, and wait for the debugger to attach before running tests.
@@ -147,7 +152,7 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 		build: await getBuild(options),
 		folderUri: options.folderUri,
 		folderMountPath: options.folderPath,
-		hideServerLog: options.hideServerLog ?? true,
+		printServerLog: options.printServerLog ?? options.hideServerLog === false,
 		extensionPaths: options.extensionPaths,
 		extensionIds: options.extensionIds
 	};
@@ -205,7 +210,7 @@ export async function open(options: Options): Promise<Disposable> {
 		build: await getBuild(options),
 		folderUri: options.folderUri,
 		folderMountPath: options.folderPath,
-		hideServerLog: options.hideServerLog ?? true,
+		printServerLog: options.printServerLog ?? options.hideServerLog === false,
 		extensionPaths: options.extensionPaths,
 		extensionIds: options.extensionIds
 	};
@@ -309,14 +314,32 @@ function validateBooleanOrUndefined(options: CommandLineOptions, name: keyof Com
 	process.exit(-1);
 }
 
-function valdiateBrowserType(browserType: unknown): BrowserType {
+function validatePrintServerLog(options: CommandLineOptions): boolean {
+	const printServerLog = validateBooleanOrUndefined(options, 'printServerLog');
+	if (printServerLog !== undefined) {
+		return printServerLog;
+	}
+	const hideServerLog = validateBooleanOrUndefined(options, 'hideServerLog');
+	if (hideServerLog !== undefined) {
+		return !hideServerLog;
+	}
+	return false;
+}
+
+
+function valdiateBrowserType(options: CommandLineOptions): BrowserType {
+	const browserType = options.browser || options.browserType;
 	if (browserType === undefined) {
 		return 'chromium';
 	}
+	if (options.browserType && options.browser) {
+		console.log(`Ignoring browserType option '${options.browserType}' as browser option '${options.browser}' is set.`);
+	}
+
 	if ((typeof browserType === 'string') && ['chromium', 'firefox', 'webkit', 'none'].includes(browserType)) {
 		return browserType as BrowserType;
 	}
-	console.log(`Invalid browser type.`);
+	console.log(`Invalid browser option ${browserType}.`);
 	showHelp();
 	process.exit(-1);
 }
@@ -447,6 +470,7 @@ function validatePortNumber(port: unknown): number | undefined {
 
 
 interface CommandLineOptions {
+	browser?: string;
 	browserType?: string;
 	extensionDevelopmentPath?: string;
 	extensionTestsPath?: string;
@@ -455,6 +479,7 @@ interface CommandLineOptions {
 	'open-devtools'?: boolean;
 	headless?: boolean;
 	hideServerLog?: boolean;
+	printServerLog?: boolean;
 	permission?: string | string[];
 	'folder-uri'?: string;
 	extensionPath?: string | string[];
@@ -467,22 +492,22 @@ interface CommandLineOptions {
 
 function showHelp() {
 	console.log('Usage:');
-	console.log(`  --browserType 'chromium' | 'firefox' | 'webkit' | 'none': The browser to launch. [Optional, defaults to 'chromium']`)
+	console.log(`  --browser 'chromium' | 'firefox' | 'webkit' | 'none': The browser to launch. [Optional, defaults to 'chromium']`)
 	console.log(`  --extensionDevelopmentPath path: A path pointing to an extension under development to include. [Optional]`);
 	console.log(`  --extensionTestsPath path: A path to a test module to run. [Optional]`);
 	console.log(`  --quality 'insiders' | 'stable' [Optional, default 'insiders', ignored when running from sources]`);
-	console.log(`  --sourcesPath path: If provided, running from VS Code sources at the given location [Optional]`);
-	console.log(`  --open-devtools: If set, opens the dev tools  [Optional]`);
+	console.log(`  --sourcesPath path: If provided, running from VS Code sources at the given location. [Optional]`);
+	console.log(`  --open-devtools: If set, opens the dev tools. [Optional]`);
 	console.log(`  --headless: Whether to hide the browser. Defaults to true when an extensionTestsPath is provided, otherwise false. [Optional]`);
-	console.log(`  --permission: Permission granted in the opened browser: e.g. 'clipboard-read', 'clipboard-write':  [Optional, Multiple]`);
-	console.log(`  --folder-uri: workspace to open VS Code on. Ignored when folderPath is provided [Optional]`);
+	console.log(`  --permission: Permission granted in the opened browser: e.g. 'clipboard-read', 'clipboard-write'. [Optional, Multiple]`);
+	console.log(`  --folder-uri: workspace to open VS Code on. Ignored when folderPath is provided. [Optional]`);
 	console.log(`  --extensionPath: A path pointing to a folder containing additional extensions to include [Optional, Multiple]`);
 	console.log(`  --extensionId: The id of an extension include. The format is '\${publisher}.\${name}'. Append '@prerelease' to use a prerelease version [Optional, Multiple]`);
-	console.log(`  --host: The host name the server is opened on  [Optional, defaults to localhost]`);
-	console.log(`  --port: The port the server is opened on  [Optional, defaults to 3000]`);
-	console.log(`  --open-devtools: If set, opens the dev tools  [Optional]`);
-	console.log(`  --verbose: If set, prints out more information when running the server  [Optional]`);
-	console.log(`  --hideServerLog: Whether to hide the server log. Defaults to true when an extensionTestsPath is provided, otherwise false. [Optional]`);
+	console.log(`  --host: The host name the server is opened on. [Optional, defaults to localhost]`);
+	console.log(`  --port: The port the server is opened on. [Optional, defaults to 3000]`);
+	console.log(`  --open-devtools: If set, opens the dev tools. [Optional]`);
+	console.log(`  --verbose: If set, prints out more information when running the server. [Optional]`);
+	console.log(`  --printServerLog: If set, prints the server access log. [Optional]`);
 	console.log(`  folderPath. A local folder to open VS Code on. The folder content will be available as a virtual file system. [Optional]`);
 }
 
@@ -492,8 +517,8 @@ async function cliMain(): Promise<void> {
 	console.log(`${manifest.name}: ${manifest.version}`);
 
 	const options: minimist.Opts = {
-		string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browserType', 'quality', 'version', 'waitForDebugger', 'folder-uri', 'permission', 'extensionPath', 'extensionId', 'sourcesPath', 'host', 'port'],
-		boolean: ['open-devtools', 'headless', 'hideServerLog', 'help', 'verbose'],
+		string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browser', 'browserType', 'quality', 'version', 'waitForDebugger', 'folder-uri', 'permission', 'extensionPath', 'extensionId', 'sourcesPath', 'host', 'port'],
+		boolean: ['open-devtools', 'headless', 'hideServerLog', 'printServerLog', 'help', 'verbose'],
 		unknown: arg => {
 			if (arg.startsWith('-')) {
 				console.log(`Unknown argument ${arg}`);
@@ -509,7 +534,7 @@ async function cliMain(): Promise<void> {
 		process.exit();
 	}
 
-	const browserType = valdiateBrowserType(args.browserType);
+	const browserType = valdiateBrowserType(args);
 	const extensionTestsPath = await validatePathOrUndefined(args, 'extensionTestsPath', true);
 	const extensionDevelopmentPath = await validatePathOrUndefined(args, 'extensionDevelopmentPath');
 	const extensionPaths = await valdiateExtensionPaths(args.extensionPath);
@@ -519,7 +544,7 @@ async function cliMain(): Promise<void> {
 	const devTools = validateBooleanOrUndefined(args, 'open-devtools');
 	const headless = validateBooleanOrUndefined(args, 'headless');
 	const permissions = valdiatePermissions(args.permission);
-	const hideServerLog = validateBooleanOrUndefined(args, 'hideServerLog');
+	const printServerLog = validatePrintServerLog(args);
 	const verbose = validateBooleanOrUndefined(args, 'verbose');
 	const port = validatePortNumber(args.port);
 	const host = validateStringOrUndefined(args, 'host');
@@ -552,7 +577,7 @@ async function cliMain(): Promise<void> {
 			folderUri,
 			folderPath,
 			headless,
-			hideServerLog,
+			printServerLog: printServerLog,
 			permissions,
 			extensionPaths,
 			extensionIds,
@@ -574,7 +599,7 @@ async function cliMain(): Promise<void> {
 			folderUri,
 			folderPath,
 			headless,
-			hideServerLog,
+			printServerLog: printServerLog,
 			permissions,
 			extensionPaths,
 			extensionIds,
