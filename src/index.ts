@@ -227,9 +227,6 @@ export async function open(options: Options): Promise<Disposable> {
 
 }
 
-const width = 1200;
-const height = 800;
-
 async function openBrowser(endpoint: string, options: Options): Promise<playwright.BrowserContext | undefined> {
 	if (options.browserType === 'none') {
 		return undefined;
@@ -253,7 +250,7 @@ async function openBrowser(endpoint: string, options: Options): Promise<playwrig
 	const headless = options.headless ?? options.extensionTestsPath !== undefined;
 
 	const browser = await browserType.launch({ headless, args, devtools: options.devTools });
-	const context = await browser.newContext();
+	const context = await browser.newContext({ viewport: null });
 	if (options.permissions) {
 		context.grantPermissions(options.permissions);
 	}
@@ -280,9 +277,6 @@ async function openBrowser(endpoint: string, options: Options): Promise<playwrig
 			console.log(message.text());
 		})
 	}
-
-
-	await page.setViewportSize({ width, height });
 
 	await page.goto(endpoint);
 
