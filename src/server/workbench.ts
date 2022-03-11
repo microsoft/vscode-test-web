@@ -69,19 +69,20 @@ async function getWorkbenchOptions(
 ): Promise<IWorkbenchOptions> {
 	const options: IWorkbenchOptions = {};
 	if (config.extensionPaths) {
-		await Promise.all(config.extensionPaths.map(async (extensionPath, index) => {
-			options.additionalBuiltinExtensions = await scanForExtensions(extensionPath, {
+		const extensionPromises = config.extensionPaths.map((extensionPath, index) => {
+			return scanForExtensions(extensionPath, {
 				scheme: ctx.protocol,
 				authority: ctx.host,
 				path: `/static/extensions/${index}`,
 			});
-		}));
+		});
+		options.additionalBuiltinExtensions = (await Promise.all(extensionPromises)).flat();
 	}
 	if (config.extensionIds) {
 		if (!options.additionalBuiltinExtensions) {
 			options.additionalBuiltinExtensions = [];
 		}
-		
+
 		options.additionalBuiltinExtensions.push(...config.extensionIds);
 	}
 	if (config.extensionDevelopmentPath) {
