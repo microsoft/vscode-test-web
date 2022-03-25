@@ -7,6 +7,7 @@ import * as Koa from 'koa';
 import * as morgan from 'koa-morgan';
 import * as kstatic from 'koa-static';
 import * as kmount from 'koa-mount';
+import * as cors from '@koa/cors';
 import { join } from 'path';
 import { IConfig } from './main';
 import workbench from './workbench';
@@ -16,9 +17,24 @@ import { prebuiltExtensionsLocation } from './extensions';
 export default async function createApp(config: IConfig): Promise<Koa> {
 	const app = new Koa();
 
-	if (config.printServerLog) {
-		app.use(morgan('dev'));
-	}
+	app.use(morgan('dev', { skip: (req, res) => res.statusCode >= 200 && res.statusCode < 300 }));
+
+	// CORS
+	app.use(
+		cors({
+			allowMethods: ['GET'],
+			credentials: true,
+			origin: (ctx: Koa.Context) => {
+				if (
+					/^https:\/\/[^.]+\.vscode-webview\.net$/.test(ctx.get('Origin'))
+				) {
+					return ctx.get('Origin');
+				}
+
+				return undefined as any;
+			},
+		})
+	);
 
 	// this is here such that the iframe worker can fetch the extension files
 	app.use((ctx, next) => {
@@ -26,7 +42,7 @@ export default async function createApp(config: IConfig): Promise<Koa> {
 		return next();
 	});
 
-	const serveOptions = { hidden: true };
+	const serveOptions: kstatic.Options = { hidden: true };
 
 	if (config.extensionDevelopmentPath) {
 		console.log('Serving dev extensions from ' + config.extensionDevelopmentPath);
