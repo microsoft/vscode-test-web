@@ -23,6 +23,7 @@ interface IWorkbenchOptions {
 	additionalBuiltinExtensions?: (string | URIComponents | GalleryExtensionInfo)[];
 	developmentOptions?: IDevelopmentOptions;
 	folderUri?: URIComponents;
+	productConfiguration?: { [key: string]: any };
 }
 
 function asJSON(value: unknown): string {
@@ -113,6 +114,7 @@ async function getWorkbenchOptions(
 	} else if (config.folderUri) {
 		options.folderUri = URI.parse(config.folderUri);
 	}
+	options.productConfiguration = { enableTelemetry: false };
 	return options;
 }
 
