@@ -1,6 +1,6 @@
 {
   "name": "@vscode/test-web",
-  "version": "0.0.23",
+  "version": "0.0.24",
   "scripts": {
     "install-extensions": "yarn --cwd=fs-provider && yarn --cwd=sample",
     "compile": "tsc -p ./ && yarn compile-fs-provider",
