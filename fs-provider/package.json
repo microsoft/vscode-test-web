@@ -15,6 +15,18 @@
 	"activationEvents": [
 		"onFileSystem:vscode-test-web"
 	],
+	"contributes": {
+		"resourceLabelFormatters": [
+			{
+				"authority": "mount",
+				"scheme": "vscode-test-web",
+				"formatting": {
+					"workspaceSuffix": "Test Files",
+					"label": "${path}"
+				}
+			}
+		]
+	},
 	"browser": "./dist/fsExtensionMain.js",
 	"scripts": {
 		"vscode:prepublish": "npm run package-web",
