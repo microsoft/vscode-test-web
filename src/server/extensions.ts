@@ -69,7 +69,7 @@ export async function getScannedBuiltinExtensions(vsCodeDevLocation: string): Pr
 	const extensionsUtil = await import(path.join(vsCodeDevLocation, 'build', 'lib', 'extensions.js'));
 
 	const localExtensions : IScannedBuiltinExtension[] =  extensionsUtil.scanBuiltinExtensions(path.join(vsCodeDevLocation, 'extensions'));
-	const prebuiltExtensions : IScannedBuiltinExtension[] =  extensionsUtil.scanBuiltinExtensions(path.join(vsCodeDevLocation, 'prebuiltExtensionsLocation'));
+	const prebuiltExtensions : IScannedBuiltinExtension[] =  extensionsUtil.scanBuiltinExtensions(path.join(vsCodeDevLocation, prebuiltExtensionsLocation));
 	for (const ext of localExtensions) {
 		let browserMain : string | undefined = ext.packageJSON.browser;
 		if (browserMain) {
