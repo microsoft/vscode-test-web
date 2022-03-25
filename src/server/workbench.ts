@@ -22,8 +22,11 @@ interface IDevelopmentOptions {
 interface IWorkbenchOptions {
 	additionalBuiltinExtensions?: (string | URIComponents | GalleryExtensionInfo)[];
 	developmentOptions?: IDevelopmentOptions;
-	folderUri?: URIComponents;
 	productConfiguration?: { [key: string]: any };
+
+	// options of the builtin workbench (vs/code/browser/workbench/workbench)
+	folderUri?: URIComponents;
+	workspaceUri?: URIComponents;
 }
 
 function asJSON(value: unknown): string {
@@ -113,6 +116,8 @@ async function getWorkbenchOptions(
 		options.folderUri = URI.parse(fsProviderFolderUri);
 	} else if (config.folderUri) {
 		options.folderUri = URI.parse(config.folderUri);
+	} else {
+		options.workspaceUri = URI.from({ scheme: 'tmp', path: `/default.code-workspace` });
 	}
 	options.productConfiguration = { enableTelemetry: false };
 	return options;
