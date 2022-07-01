@@ -17,7 +17,7 @@ import { prebuiltExtensionsLocation } from './extensions';
 export default async function createApp(config: IConfig): Promise<Koa> {
 	const app = new Koa();
 
-	app.use(morgan('dev', { skip: (req, res) => res.statusCode >= 200 && res.statusCode < 300 }));
+	app.use(morgan('dev', { skip: (req, res) => !config.printServerLog && (res.statusCode >= 200 && res.statusCode < 300) }));
 
 	// CORS
 	app.use(
