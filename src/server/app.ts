@@ -3,12 +3,14 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { ReadStream } from 'fs';
 import * as Koa from 'koa';
 import * as morgan from 'koa-morgan';
 import * as kstatic from 'koa-static';
 import * as kmount from 'koa-mount';
 import * as cors from '@koa/cors';
-import { join } from 'path';
+import * as getstream from 'get-stream';
+import { basename, join } from 'path';
 import { IConfig } from './main';
 import workbench from './workbench';
 import { configureMounts } from './mounts';
@@ -40,6 +42,15 @@ export default async function createApp(config: IConfig): Promise<Koa> {
 	app.use((ctx, next) => {
 		ctx.set('Access-Control-Allow-Origin', '*');
 		return next();
+	});
+
+	// shift the line numbers of source maps in extensions by 2 as the content is wrapped by an anonymous function
+	app.use(async (ctx, next) => {
+		await next();
+		if (ctx.status === 200 && ctx.path.match(/\/(dev)?extensions\/.*\.js\.map$/) && ctx.body instanceof ReadStream) {
+			// we know it's a ReadStream as that's what kstatic uses
+			ctx.response.body = `{"version":3,"file":"${basename(ctx.path)}","sections":[{"offset":{"line":2,"column":0},"map":${await getstream(ctx.body)} }]}`;
+		}
 	});
 
 	const serveOptions: kstatic.Options = { hidden: true };
