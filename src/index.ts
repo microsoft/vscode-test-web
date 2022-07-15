@@ -327,7 +327,7 @@ function validatePrintServerLog(options: CommandLineOptions): boolean {
 }
 
 
-function valdiateBrowserType(options: CommandLineOptions): BrowserType {
+function validateBrowserType(options: CommandLineOptions): BrowserType {
 	const browserType = options.browser || options.browserType;
 	if (browserType === undefined) {
 		return 'chromium';
@@ -344,7 +344,7 @@ function valdiateBrowserType(options: CommandLineOptions): BrowserType {
 	process.exit(-1);
 }
 
-function valdiatePermissions(permissions: unknown): string[] | undefined {
+function validatePermissions(permissions: unknown): string[] | undefined {
 	if (permissions === undefined) {
 		return undefined
 	}
@@ -363,7 +363,7 @@ function valdiatePermissions(permissions: unknown): string[] | undefined {
 	process.exit(-1);
 }
 
-async function valdiateExtensionPaths(extensionPaths: unknown): Promise<string[] | undefined> {
+async function validateExtensionPaths(extensionPaths: unknown): Promise<string[] | undefined> {
 	if (extensionPaths === undefined) {
 		return undefined
 	}
@@ -389,7 +389,7 @@ async function valdiateExtensionPaths(extensionPaths: unknown): Promise<string[]
 
 const EXTENSION_IDENTIFIER_PATTERN = /^([a-z0-9A-Z][a-z0-9-A-Z]*\.[a-z0-9A-Z][a-z0-9-A-Z]*)(@prerelease)?$/;
 
-async function valdiateExtensionIds(extensionIds: unknown): Promise<GalleryExtension[] | undefined> {
+async function validateExtensionIds(extensionIds: unknown): Promise<GalleryExtension[] | undefined> {
 	if (extensionIds === undefined) {
 		return undefined
 	}
@@ -534,16 +534,16 @@ async function cliMain(): Promise<void> {
 		process.exit();
 	}
 
-	const browserType = valdiateBrowserType(args);
+	const browserType = validateBrowserType(args);
 	const extensionTestsPath = await validatePathOrUndefined(args, 'extensionTestsPath', true);
 	const extensionDevelopmentPath = await validatePathOrUndefined(args, 'extensionDevelopmentPath');
-	const extensionPaths = await valdiateExtensionPaths(args.extensionPath);
-	const extensionIds = await valdiateExtensionIds(args.extensionId);
+	const extensionPaths = await validateExtensionPaths(args.extensionPath);
+	const extensionIds = await validateExtensionIds(args.extensionId);
 	const vsCodeDevPath = await validatePathOrUndefined(args, 'sourcesPath');
 	const quality = validateQuality(args.quality, args.version, vsCodeDevPath);
 	const devTools = validateBooleanOrUndefined(args, 'open-devtools');
 	const headless = validateBooleanOrUndefined(args, 'headless');
-	const permissions = valdiatePermissions(args.permission);
+	const permissions = validatePermissions(args.permission);
 	const printServerLog = validatePrintServerLog(args);
 	const verbose = validateBooleanOrUndefined(args, 'verbose');
 	const port = validatePortNumber(args.port);
