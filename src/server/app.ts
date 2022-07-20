@@ -44,6 +44,20 @@ export default async function createApp(config: IConfig): Promise<Koa> {
 		return next();
 	});
 
+	// COI
+	app.use((ctx, next) => {
+		const value = ctx.query['vscode-coi'];
+		if (value === '1') {
+			ctx.set('Cross-Origin-Opener-Policy', 'same-origin');
+		} else if (value === '2') {
+			ctx.set('Cross-Origin-Embedder-Policy', 'require-corp');
+		} else if (value === '3' || value === '') {
+			ctx.set('Cross-Origin-Opener-Policy', 'same-origin');
+			ctx.set('Cross-Origin-Embedder-Policy', 'require-corp');
+		}
+		return next()
+	})
+
 	// shift the line numbers of source maps in extensions by 2 as the content is wrapped by an anonymous function
 	app.use(async (ctx, next) => {
 		await next();
@@ -84,4 +98,3 @@ export default async function createApp(config: IConfig): Promise<Koa> {
 
 	return app;
 }
-
