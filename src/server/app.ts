@@ -39,11 +39,13 @@ export default async function createApp(config: IConfig): Promise<Koa> {
 		})
 	);
 
-	// CSP: frame-ancestors
-	app.use((ctx, next) => {
-		ctx.set('Content-Security-Policy', `frame-ancestors 'none'`);
-		return next();
-	});
+	if (config.build.type !== 'sources') {
+		// CSP: frame-ancestors
+		app.use((ctx, next) => {
+			ctx.set('Content-Security-Policy', `frame-ancestors 'none'`);
+			return next();
+		});
+	}
 
 	// COI
 	app.use((ctx, next) => {
