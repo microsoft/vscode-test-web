@@ -28,6 +28,7 @@ export default async function createApp(config: IConfig): Promise<Koa> {
 			credentials: true,
 			origin: (ctx: Koa.Context) => {
 				if (
+					/^https:\/\/[^.]+\.vscode-cdn\.net$/.test(ctx.get('Origin')) || // needed for the webviewContent
 					/^https:\/\/[^.]+\.vscode-webview\.net$/.test(ctx.get('Origin'))
 				) {
 					return ctx.get('Origin');
@@ -38,9 +39,9 @@ export default async function createApp(config: IConfig): Promise<Koa> {
 		})
 	);
 
-	// this is here such that the iframe worker can fetch the extension files
+	// CSP: frame-ancestors
 	app.use((ctx, next) => {
-		ctx.set('Access-Control-Allow-Origin', '*');
+		ctx.set('Content-Security-Policy', `frame-ancestors 'none'`);
 		return next();
 	});
 

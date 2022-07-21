@@ -145,6 +145,10 @@ export default function (config: IConfig): Router.Middleware {
 	router.get('/', async ctx => {
 		const options = await getWorkbenchOptions(ctx, config);
 		ctx.body = await ctx.state.workbench.render(options);
+		if (config.coi) {
+			ctx.set('Cross-Origin-Opener-Policy', 'same-origin');
+			ctx.set('Cross-Origin-Embedder-Policy', 'require-corp');
+		}
 	});
 
 	return router.routes();

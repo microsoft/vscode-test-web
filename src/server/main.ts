@@ -14,6 +14,7 @@ export interface IConfig {
 	readonly folderUri: string | undefined;
 	readonly folderMountPath: string | undefined;
 	readonly printServerLog: boolean;
+	readonly coi: boolean;
 }
 
 export interface GalleryExtensionInfo {
