@@ -74,6 +74,7 @@ CLI options:
 | --sourcesPath | If set, runs the server from VS Code sources located at the given path. Make sure the sources and extensions are compiled (`yarn compile` and `yarn compile-web`). |
 | --headless | If set, hides the browser. Defaults to true when an extensionTestsPath is provided, otherwise false. |
 | --permission | Permission granted to the opened browser: e.g. `clipboard-read`, `clipboard-write`.  See [full list of options](https://playwright.dev/docs/api/class-browsercontext#browser-context-grant-permissions). Argument can be provided multiple times. |
+| --coi | If set, enables cross origin isolation. Defaults to false. |
 | --folder-uri | URI of the workspace to open VS Code on. Ignored when `folderPath` is provided. |
 | --extensionPath | A path pointing to a folder containing additional extensions to include. Argument can be provided multiple times. |
 | --extensionId | The id of an extension include. The format is `${publisher}.${name}`. Append `@prerelease` to use the prerelease version. |

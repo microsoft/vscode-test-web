@@ -1,12 +1,13 @@
 # Changelog
-
+## 0.0.28
+ * new option `--coi` to enable cross origin isolation.
 
 ## 0.0.22
- * new option `--printServerLog` replacing `--hideServerLog`
- * new option `--browser` replacing `--browserType`
+ * new option `--printServerLog` replacing `--hideServerLog`.
+ * new option `--browser` replacing `--browserType`.
 
 ## 0.0.20
- * new option `--extensionId publisher.name[@prerelease]` to include one or more extensions
+ * new option `--extensionId publisher.name[@prerelease]` to include one or more extensions.
 
 ## 0.0.18
  * new option `--browserType none` to start the server without opening a browser.
@@ -17,7 +18,7 @@
 
 ## 0.0.16
  * new option `--sourcesPath`: If provided, runs the server from VS Code sources at the given location.
- * option `--version` is deprecated and replaced with `quality`. Supported values: `stable`, `insiders`. Instead of `sources` use `--insiders`
+ * option `--version` is deprecated and replaced with `quality`. Supported values: `stable`, `insiders`. Instead of `sources` use `--insiders`.
 
 ## 0.0.14
  * new option `--extensionPath` : A path pointing to a folder containing additional extensions to include. Argument can be provided multiple times.

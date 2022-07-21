@@ -71,6 +71,11 @@ export interface Options {
 	headless?: boolean;
 
 	/**
+	 * If set, opens the page with cross origin isolation enabled.
+	 */
+	coi?: boolean;
+
+	/**
 	 * @deprecated. Use `printServerLog` instead.
 	 */
 	hideServerLog?: boolean;
@@ -154,7 +159,8 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 		folderMountPath: options.folderPath,
 		printServerLog: options.printServerLog ?? options.hideServerLog === false,
 		extensionPaths: options.extensionPaths,
-		extensionIds: options.extensionIds
+		extensionIds: options.extensionIds,
+		coi: !!options.coi
 	};
 
 
@@ -212,7 +218,8 @@ export async function open(options: Options): Promise<Disposable> {
 		folderMountPath: options.folderPath,
 		printServerLog: options.printServerLog ?? options.hideServerLog === false,
 		extensionPaths: options.extensionPaths,
-		extensionIds: options.extensionIds
+		extensionIds: options.extensionIds,
+		coi: !!options.coi
 	};
 
 	const host = options.host ?? 'localhost';
@@ -487,6 +494,7 @@ interface CommandLineOptions {
 	host?: string;
 	port?: string;
 	verbose?: boolean;
+	coi?: boolean;
 	help?: boolean;
 }
 
@@ -500,6 +508,7 @@ function showHelp() {
 	console.log(`  --open-devtools: If set, opens the dev tools. [Optional]`);
 	console.log(`  --headless: Whether to hide the browser. Defaults to true when an extensionTestsPath is provided, otherwise false. [Optional]`);
 	console.log(`  --permission: Permission granted in the opened browser: e.g. 'clipboard-read', 'clipboard-write'. [Optional, Multiple]`);
+	console.log(`  --coi: Enables cross origin isolation [Optional]`);
 	console.log(`  --folder-uri: workspace to open VS Code on. Ignored when folderPath is provided. [Optional]`);
 	console.log(`  --extensionPath: A path pointing to a folder containing additional extensions to include [Optional, Multiple]`);
 	console.log(`  --extensionId: The id of an extension include. The format is '\${publisher}.\${name}'. Append '@prerelease' to use a prerelease version [Optional, Multiple]`);
@@ -518,7 +527,7 @@ async function cliMain(): Promise<void> {
 
 	const options: minimist.Opts = {
 		string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browser', 'browserType', 'quality', 'version', 'waitForDebugger', 'folder-uri', 'permission', 'extensionPath', 'extensionId', 'sourcesPath', 'host', 'port'],
-		boolean: ['open-devtools', 'headless', 'hideServerLog', 'printServerLog', 'help', 'verbose'],
+		boolean: ['open-devtools', 'headless', 'hideServerLog', 'printServerLog', 'help', 'verbose', 'coi'],
 		unknown: arg => {
 			if (arg.startsWith('-')) {
 				console.log(`Unknown argument ${arg}`);
@@ -548,6 +557,7 @@ async function cliMain(): Promise<void> {
 	const verbose = validateBooleanOrUndefined(args, 'verbose');
 	const port = validatePortNumber(args.port);
 	const host = validateStringOrUndefined(args, 'host');
+	const coi = validateBooleanOrUndefined(args, 'coi');
 
 	const waitForDebugger = validatePortNumber(args.waitForDebugger);
 
@@ -583,6 +593,7 @@ async function cliMain(): Promise<void> {
 			extensionIds,
 			vsCodeDevPath,
 			verbose,
+			coi,
 			host,
 			port
 		}).catch(e => {
@@ -605,6 +616,7 @@ async function cliMain(): Promise<void> {
 			extensionIds,
 			vsCodeDevPath,
 			verbose,
+			coi,
 			host,
 			port
 		})
