@@ -49,6 +49,7 @@ export default async function createApp(config: IConfig): Promise<Koa> {
 
 	// COI
 	app.use((ctx, next) => {
+		// set COOP/COEP depending on vscode-coi-flags
 		const value = ctx.query['vscode-coi'];
 		if (value === '1') {
 			ctx.set('Cross-Origin-Opener-Policy', 'same-origin');
@@ -58,6 +59,9 @@ export default async function createApp(config: IConfig): Promise<Koa> {
 			ctx.set('Cross-Origin-Opener-Policy', 'same-origin');
 			ctx.set('Cross-Origin-Embedder-Policy', 'require-corp');
 		}
+
+		// set CORP on all resources
+		ctx.set('Cross-Origin-Resource-Policy', 'cross-origin')
 		return next()
 	})
 
