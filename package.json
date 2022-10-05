@@ -12,7 +12,7 @@
     "compile-fs-provider": "yarn --cwd=fs-provider compile-web",
     "compile-sample": "yarn --cwd=sample compile-web",
     "sample": "npm run compile && npm run compile-sample && node . --extensionDevelopmentPath=sample sample/test-workspace",
-    "sample-tests": "npm run compile && npm run compile-sample && node . --extensionDevelopmentPath=sample --extensionTestsPath=sample/dist/web/test/suite/index.js --headless=true sample/test-workspace",
+    "sample-tests": "npm run compile && npm run compile-sample && node . --extensionDevelopmentPath=sample --extensionTestsPath=sample/dist/web/test/suite/index.js sample/test-workspace",
     "empty": "npm run compile && node ."
   },
   "main": "./out/index.js",
