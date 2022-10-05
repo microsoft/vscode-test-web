@@ -34,10 +34,10 @@ extends:
       #   nodeVersions:
       #     - 14.x
       #     - 16.x
-      # - name: Windows
-      #   nodeVersions:
-      #     - 14.x
-      #     - 16.x
+      - name: Windows
+        nodeVersions:
+          - 14.x
+          - 16.x
 
     buildSteps:
       - script: yarn --froze-lockfile
