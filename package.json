@@ -30,7 +30,7 @@
     "koa-mount": "^4.0.0",
     "koa-static": "^5.0.0",
     "minimist": "^1.2.6",
-    "playwright": "^1.23.1",
+    "playwright": "^1.26.1",
     "vscode-uri": "^3.0.3",
     "http-proxy-agent": "^5.0.0",
     "https-proxy-agent": "^5.0.1",
