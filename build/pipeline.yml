@@ -1,0 +1,38 @@
+name: $(Date:yyyyMMdd)$(Rev:.r)
+
+trigger:
+  branches:
+    include:
+      - main
+  tags:
+    include: ['*']
+pr: none
+
+resources:
+  repositories:
+    - repository: templates
+      type: github
+      name: microsoft/vscode-engineering
+      ref: main
+      endpoint: Monaco
+
+parameters:
+  - name: publishPackage
+    displayName: 🚀 Publish Package
+    type: boolean
+    default: false
+
+extends:
+  template: azure-pipelines/npm-package/pipeline.yml@templates
+  parameters:
+    buildSteps:
+      - script: |
+          yarn --froze-lockfile
+          yarn --cwd=fs-provider --froze-lockfile
+          yarn --cwd=sample --froze-lockfile
+        displayName: Install dependencies
+
+      - script: yarn compile
+        displayName: Compile npm package
+
+    publishPackage: ${{ parameters.publishPackage }}
