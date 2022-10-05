@@ -35,4 +35,8 @@ extends:
       - script: yarn compile
         displayName: Compile npm package
 
+    testSteps:
+      - script: yarn sample-tests
+        displayName: Test npm package
+
     publishPackage: ${{ parameters.publishPackage }}
