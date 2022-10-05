@@ -25,6 +25,20 @@ parameters:
 extends:
   template: azure-pipelines/npm-package/pipeline.yml@templates
   parameters:
+    buildPlatforms:
+      - name: Linux
+        nodeVersions:
+          - 14.x
+          - 16.x
+      - name: MacOS
+        nodeVersions:
+          - 14.x
+          - 16.x
+      - name: Windows
+        nodeVersions:
+          - 14.x
+          - 16.x
+
     buildSteps:
       - script: |
           yarn --froze-lockfile
