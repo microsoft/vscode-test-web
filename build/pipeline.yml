@@ -31,14 +31,14 @@ extends:
             nodeVersions:
               - 14.x
               - 16.x
-          - name: MacOS
-            nodeVersions:
-              - 14.x
-              - 16.x
-          - name: Windows
-            nodeVersions:
-              - 14.x
-              - 16.x
+          # - name: MacOS
+          #   nodeVersions:
+          #     - 14.x
+          #     - 16.x
+          # - name: Windows
+          #   nodeVersions:
+          #     - 14.x
+          #     - 16.x
 
         buildSteps:
           - script: yarn --frozen-lockfile
