@@ -40,10 +40,10 @@ extends:
           - 16.x
 
     buildSteps:
-      - script: yarn --froze-lockfile
+      - script: yarn --frozen-lockfile
         displayName: Install dependencies
 
-      - script: yarn --cwd=fs-provider --froze-lockfile
+      - script: yarn --cwd=fs-provider --frozen-lockfile
         displayName: Install dependencies (fs-provider)
 
       - script: yarn compile
@@ -56,7 +56,7 @@ extends:
         displayName: Start xvfb
         condition: eq(variables['Agent.OS'], 'Linux')
 
-      - script: yarn --cwd=sample --froze-lockfile
+      - script: yarn --cwd=sample --frozen-lockfile
         displayName: Install dependencies (sample)
 
       - script: yarn sample-tests
