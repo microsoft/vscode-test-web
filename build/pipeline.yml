@@ -28,6 +28,12 @@ extends:
     npmPackages:
       - name: test-web
 
+        buildPlatforms:
+          - name: Linux
+            nodeVersions:
+              - 14.x
+              - 16.x
+
         buildSteps:
           - script: yarn --frozen-lockfile
             displayName: Install dependencies
