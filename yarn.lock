@@ -1478,17 +1478,17 @@ pinkie@^2.0.0:
   resolved "https://registry.yarnpkg.com/pinkie/-/pinkie-2.0.4.tgz#72556b80cfa0d48a974e80e77248e80ed4f7f870"
   integrity sha1-clVrgM+g1IqXToDnckjoDtT3+HA=
 
-playwright-core@1.23.1:
-  version "1.23.1"
-  resolved "https://registry.yarnpkg.com/playwright-core/-/playwright-core-1.23.1.tgz#af02bd7568af1017e477433b1b003ba84e1eb312"
-  integrity sha512-9CXsE0gawph4KXl6oUaa0ehHRySZjHvly4TybcBXDvzK3N3o6L/eZ8Q6iVWUiMn0LLS5bRFxo1qEtOETlYJxjw==
+playwright-core@1.26.1:
+  version "1.26.1"
+  resolved "https://registry.yarnpkg.com/playwright-core/-/playwright-core-1.26.1.tgz#a162f476488312dcf12638d97685144de6ada512"
+  integrity sha512-hzFchhhxnEiPc4qVPs9q2ZR+5eKNifY2hQDHtg1HnTTUuphYCBP8ZRb2si+B1TR7BHirgXaPi48LIye5SgrLAA==
 
-playwright@^1.23.1:
-  version "1.23.1"
-  resolved "https://registry.yarnpkg.com/playwright/-/playwright-1.23.1.tgz#b029885e995aa1f9626aac851410c5ef615718f4"
-  integrity sha512-+lgiy1JZMNPwpBp5tsUdjTGxuJ+lXZbtSKmMDc0/f1oVsNDXXA+r7zeC9Kzd+4jSHteoJJocargxVx2Mn1o2kw==
+playwright@^1.26.1:
+  version "1.26.1"
+  resolved "https://registry.yarnpkg.com/playwright/-/playwright-1.26.1.tgz#0082c1d6a1c9cefe3f7a593396ad8568746184d0"
+  integrity sha512-WQmEdCgYYe8jOEkhkW9QLcK0PB+w1RZztBLYIT10MEEsENYg251cU0IzebDINreQsUt+HCwwRhtdz4weH9ICcQ==
   dependencies:
-    playwright-core "1.23.1"
+    playwright-core "1.26.1"
 
 prelude-ls@^1.2.1:
   version "1.2.1"

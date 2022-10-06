@@ -4,6 +4,7 @@
 .eslintrc.js
 .prettierrc
 .github/
+build/
 src/
 sample/
 fs-provider/src/
