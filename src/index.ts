@@ -171,6 +171,8 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 	return new Promise(async (s, e) => {
 
 		const endpoint = `http://${host}:${port}`;
+
+		console.log(`Opening browser on ${endpoint}...`);
 		const context = await openBrowser(endpoint, options);
 		if (context) {
 			context.once('close', () => server.close());
@@ -521,6 +523,13 @@ function showHelp() {
 }
 
 async function cliMain(): Promise<void> {
+	process.on('unhandledRejection', (e: any) => {
+		console.error('unhandledRejection', e);
+	});
+	process.on('uncaughtException', (e: any) => {
+		console.error('uncaughtException', e);
+	});
+
 	// eslint-disable-next-line @typescript-eslint/no-var-requires
 	const manifest = require('../package.json');
 	console.log(`${manifest.name}: ${manifest.version}`);
@@ -597,7 +606,7 @@ async function cliMain(): Promise<void> {
 			host,
 			port
 		}).catch(e => {
-			console.log(e.message);
+			console.log('Error running tests:', e);
 			process.exit(1);
 		})
 	} else {
