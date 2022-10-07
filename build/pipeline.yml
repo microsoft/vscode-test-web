@@ -4,8 +4,6 @@ trigger:
   branches:
     include:
       - main
-  tags:
-    include: ['*']
 pr: none
 
 resources:
@@ -18,50 +16,53 @@ resources:
 
 parameters:
   - name: publishPackage
-    displayName: 🚀 Publish Package
+    displayName: 🚀 Publish test-web
     type: boolean
     default: false
 
 extends:
   template: azure-pipelines/npm-package/pipeline.yml@templates
   parameters:
-    buildPlatforms:
-      - name: Linux
-        nodeVersions:
-          - 14.x
-          - 16.x
-      - name: MacOS
-        nodeVersions:
-          - 14.x
-          - 16.x
-      - name: Windows
-        nodeVersions:
-          - 14.x
-          - 16.x
+    npmPackages:
+      - name: test-web
 
-    buildSteps:
-      - script: yarn --frozen-lockfile
-        displayName: Install dependencies
+        buildPlatforms:
+          - name: Linux
+            nodeVersions:
+              - 14.x
+              - 16.x
+          - name: MacOS
+            nodeVersions:
+              - 14.x
+              - 16.x
+          - name: Windows
+            nodeVersions:
+              - 14.x
+              - 16.x
 
-      - script: yarn --cwd=fs-provider --frozen-lockfile
-        displayName: Install dependencies (fs-provider)
+        buildSteps:
+          - script: yarn --frozen-lockfile
+            displayName: Install dependencies
 
-      - script: yarn compile
-        displayName: Compile npm package
+          - script: yarn --cwd=fs-provider --frozen-lockfile
+            displayName: Install dependencies (fs-provider)
 
-    testSteps:
-      - bash: |
-          /usr/bin/Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
-          echo ">>> Started xvfb"
-        displayName: Start xvfb
-        condition: eq(variables['Agent.OS'], 'Linux')
+          - script: yarn compile
+            displayName: Compile npm package
 
-      - script: yarn --cwd=sample --frozen-lockfile
-        displayName: Install dependencies (sample)
+        testSteps:
+          - bash: |
+              /usr/bin/Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+              echo ">>> Started xvfb"
+            displayName: Start xvfb
+            condition: eq(variables['Agent.OS'], 'Linux')
 
-      - script: yarn sample-tests
-        displayName: Test npm package
-        env:
-          DISPLAY: ':99.0'
+          - script: yarn --cwd=sample --frozen-lockfile
+            displayName: Install dependencies (sample)
+
+          - script: yarn sample-tests
+            displayName: Test npm package
+            env:
+              DISPLAY: ':99.0'
 
     publishPackage: ${{ parameters.publishPackage }}
