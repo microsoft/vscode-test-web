@@ -65,4 +65,4 @@ extends:
             env:
               DISPLAY: ':99.0'
 
-    publishPackage: ${{ parameters.publishPackage }}
+        publishPackage: ${{ parameters.publishPackage }}
