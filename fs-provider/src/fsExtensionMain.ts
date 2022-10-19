@@ -101,9 +101,9 @@ async function getEntries(serverUri: Uri): Promise<Map<string, Entry>> {
 		} catch {
 			// ignore
 		}
-		console.log(`Invalid server response format for ${url.toString(/*skipEncoding*/ true)}.`);
+		console.log(`Invalid server response format for ${url}.`);
 	} else {
-		console.log(`Invalid server response for ${url.toString(/*skipEncoding*/ true)}. Status ${response.status}`);
+		console.log(`Invalid server response for ${url}. Status ${response.status}`);
 	}
 	return new Map();
 }
