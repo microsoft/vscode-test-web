@@ -33,9 +33,7 @@ extends:
           - script: yarn --cwd=fs-provider --frozen-lockfile
             displayName: Install dependencies (fs-provider)
 
-          - script: yarn compile
-            displayName: Compile npm package
-
+          # compilation happens in pre script for `pack`
         testPlatforms:
           - name: Linux
             nodeVersions:
@@ -60,9 +58,6 @@ extends:
           - script: yarn --cwd=sample --frozen-lockfile
             displayName: Install dependencies (sample)
 
-          - script: yarn compile
-            displayName: Compile npm package
-
           - bash: |
               /usr/bin/Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
               echo ">>> Started xvfb"
@@ -70,7 +65,7 @@ extends:
             condition: eq(variables['Agent.OS'], 'Linux')
 
           - script: yarn sample-tests
-            displayName: Test npm package
+            displayName: Compile & test npm package
             env:
               DISPLAY: ':99.0'
 
