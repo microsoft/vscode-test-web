@@ -33,7 +33,8 @@ extends:
           - script: yarn --cwd=fs-provider --frozen-lockfile
             displayName: Install dependencies (fs-provider)
 
-          # compilation happens in pre script for `pack`
+          # the rest of the build steps are part of the 'prepack' script, automatically run when the pipeline invokes 'yarn pack'
+
         testPlatforms:
           - name: Linux
             nodeVersions:
