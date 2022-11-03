@@ -5,7 +5,7 @@
     "install-extensions": "yarn --cwd=fs-provider && yarn --cwd=sample",
     "compile": "tsc -p ./ && yarn compile-fs-provider",
     "watch": "tsc -w -p ./",
-    "prepublishOnly": "yarn compile",
+    "prepack": "yarn compile",
     "test": "eslint src --ext ts && tsc --noEmit",
     "preversion": "npm test",
     "postversion": "git push && git push --tags",

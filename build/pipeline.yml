@@ -26,7 +26,16 @@ extends:
     npmPackages:
       - name: test-web
 
-        buildPlatforms:
+        buildSteps:
+          - script: yarn --frozen-lockfile
+            displayName: Install dependencies
+
+          - script: yarn --cwd=fs-provider --frozen-lockfile
+            displayName: Install dependencies (fs-provider)
+
+          # the rest of the build steps are part of the 'prepack' script, automatically run when the pipeline invokes 'yarn pack'
+
+        testPlatforms:
           - name: Linux
             nodeVersions:
               - 14.x
@@ -40,28 +49,24 @@ extends:
               - 14.x
               - 16.x
 
-        buildSteps:
+        testSteps:
           - script: yarn --frozen-lockfile
             displayName: Install dependencies
 
           - script: yarn --cwd=fs-provider --frozen-lockfile
             displayName: Install dependencies (fs-provider)
 
-          - script: yarn compile
-            displayName: Compile npm package
+          - script: yarn --cwd=sample --frozen-lockfile
+            displayName: Install dependencies (sample)
 
-        testSteps:
           - bash: |
               /usr/bin/Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
               echo ">>> Started xvfb"
             displayName: Start xvfb
             condition: eq(variables['Agent.OS'], 'Linux')
 
-          - script: yarn --cwd=sample --frozen-lockfile
-            displayName: Install dependencies (sample)
-
           - script: yarn sample-tests
-            displayName: Test npm package
+            displayName: Compile & test npm package
             env:
               DISPLAY: ':99.0'
 
