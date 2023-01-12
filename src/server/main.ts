@@ -15,6 +15,7 @@ export interface IConfig {
 	readonly folderMountPath: string | undefined;
 	readonly printServerLog: boolean;
 	readonly coi: boolean;
+	readonly esm: boolean;
 }
 
 export interface GalleryExtensionInfo {
@@ -54,4 +55,3 @@ export async function runServer(host: string, port: number | undefined, config: 
 		throw e;
 	}
 }
-
