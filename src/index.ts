@@ -76,6 +76,11 @@ export interface Options {
 	coi?: boolean;
 
 	/**
+	 * If set, serves the page with ESM usage.
+	 */
+	esm?: boolean;
+
+	/**
 	 * @deprecated. Use `printServerLog` instead.
 	 */
 	hideServerLog?: boolean;
@@ -160,7 +165,8 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 		printServerLog: options.printServerLog ?? options.hideServerLog === false,
 		extensionPaths: options.extensionPaths,
 		extensionIds: options.extensionIds,
-		coi: !!options.coi
+		coi: !!options.coi,
+		esm: !!options.esm
 	};
 
 
@@ -221,7 +227,8 @@ export async function open(options: Options): Promise<Disposable> {
 		printServerLog: options.printServerLog ?? options.hideServerLog === false,
 		extensionPaths: options.extensionPaths,
 		extensionIds: options.extensionIds,
-		coi: !!options.coi
+		coi: !!options.coi,
+		esm: !!options.esm
 	};
 
 	const host = options.host ?? 'localhost';
@@ -497,6 +504,7 @@ interface CommandLineOptions {
 	port?: string;
 	verbose?: boolean;
 	coi?: boolean;
+	esm?: boolean;
 	help?: boolean;
 }
 
@@ -511,6 +519,7 @@ function showHelp() {
 	console.log(`  --headless: Whether to hide the browser. Defaults to true when an extensionTestsPath is provided, otherwise false. [Optional]`);
 	console.log(`  --permission: Permission granted in the opened browser: e.g. 'clipboard-read', 'clipboard-write'. [Optional, Multiple]`);
 	console.log(`  --coi: Enables cross origin isolation [Optional]`);
+	console.log(`  --esm: Serve the ESM variant of VS Code [Optional]`);
 	console.log(`  --folder-uri: workspace to open VS Code on. Ignored when folderPath is provided. [Optional]`);
 	console.log(`  --extensionPath: A path pointing to a folder containing additional extensions to include [Optional, Multiple]`);
 	console.log(`  --extensionId: The id of an extension include. The format is '\${publisher}.\${name}'. Append '@prerelease' to use a prerelease version [Optional, Multiple]`);
@@ -536,7 +545,7 @@ async function cliMain(): Promise<void> {
 
 	const options: minimist.Opts = {
 		string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browser', 'browserType', 'quality', 'version', 'waitForDebugger', 'folder-uri', 'permission', 'extensionPath', 'extensionId', 'sourcesPath', 'host', 'port'],
-		boolean: ['open-devtools', 'headless', 'hideServerLog', 'printServerLog', 'help', 'verbose', 'coi'],
+		boolean: ['open-devtools', 'headless', 'hideServerLog', 'printServerLog', 'help', 'verbose', 'coi', 'esm'],
 		unknown: arg => {
 			if (arg.startsWith('-')) {
 				console.log(`Unknown argument ${arg}`);
@@ -567,6 +576,7 @@ async function cliMain(): Promise<void> {
 	const port = validatePortNumber(args.port);
 	const host = validateStringOrUndefined(args, 'host');
 	const coi = validateBooleanOrUndefined(args, 'coi');
+	const esm = validateBooleanOrUndefined(args, 'esm');
 
 	const waitForDebugger = validatePortNumber(args.waitForDebugger);
 
@@ -602,6 +612,7 @@ async function cliMain(): Promise<void> {
 			extensionIds,
 			vsCodeDevPath,
 			verbose,
+			esm,
 			coi,
 			host,
 			port
@@ -625,6 +636,7 @@ async function cliMain(): Promise<void> {
 			extensionIds,
 			vsCodeDevPath,
 			verbose,
+			esm,
 			coi,
 			host,
 			port
