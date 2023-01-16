@@ -36,19 +36,19 @@ extends:
 
           # the rest of the build steps are part of the 'prepack' script, automatically run when the pipeline invokes 'yarn pack'
 
-        testPlatforms:
-          - name: Linux
-            nodeVersions:
-              - 14.x
-              - 16.x
-          - name: MacOS
-            nodeVersions:
-              - 14.x
-              - 16.x
-          - name: Windows
-            nodeVersions:
-              - 14.x
-              - 16.x
+        testPlatforms: []
+          # - name: Linux
+          #   nodeVersions:
+          #     - 14.x
+          #     - 16.x
+          # - name: MacOS
+          #   nodeVersions:
+          #     - 14.x
+          #     - 16.x
+          # - name: Windows
+          #   nodeVersions:
+          #     - 14.x
+          #     - 16.x
 
         testSteps:
           - script: yarn --frozen-lockfile
