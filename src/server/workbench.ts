@@ -34,7 +34,7 @@ function asJSON(value: unknown): string {
 }
 
 class Workbench {
-	constructor(readonly baseUrl: string, readonly dev: boolean, private readonly builtInExtensions: IScannedBuiltinExtension[] = []) { }
+	constructor(readonly baseUrl: string, readonly dev: boolean, readonly esm: boolean, private readonly builtInExtensions: IScannedBuiltinExtension[] = []) { }
 
 	async render(workbenchWebConfiguration: IWorkbenchOptions): Promise<string> {
 		const values: { [key: string]: string } = {
@@ -46,7 +46,7 @@ class Workbench {
 		};
 
 		try {
-			const workbenchTemplate = (await fs.readFile(path.resolve(__dirname, '../../views/workbench.html'))).toString();
+			const workbenchTemplate = (await fs.readFile(path.resolve(__dirname, `../../views/workbench${this.esm ? '-esm' : ''}.html`))).toString();
 			return workbenchTemplate.replace(/\{\{([^}]+)\}\}/g, (_, key) => values[key] ?? 'undefined');
 		} catch (e) {
 			return String(e);
@@ -54,9 +54,13 @@ class Workbench {
 	}
 
 	getMain() {
-		return this.dev
-			? `<script> require(['vs/code/browser/workbench/workbench'], function() {}); </script>`
-			: `<script src="${this.baseUrl}/out/vs/workbench/workbench.web.main.nls.js"></script>`
+		if (this.esm) {
+			return `<script type="module" src="${this.baseUrl}/out/vs/code/browser/workbench/workbench.js"></script>`;
+		}
+		if (this.dev) {
+			return `<script> require(['vs/code/browser/workbench/workbench'], function() {}); </script>`;
+		}
+		return `<script src="${this.baseUrl}/out/vs/workbench/workbench.web.main.nls.js"></script>`
 			+ `<script src="${this.baseUrl}/out/vs/workbench/workbench.web.main.js"></script>`
 			+ `<script src="${this.baseUrl}/out/vs/code/browser/workbench/workbench.js"></script>`;
 	}
@@ -129,11 +133,11 @@ export default function (config: IConfig): Router.Middleware {
 	router.use(async (ctx, next) => {
 		if (config.build.type === 'sources') {
 			const builtInExtensions = await getScannedBuiltinExtensions(config.build.location);
-			ctx.state.workbench = new Workbench(`${ctx.protocol}://${ctx.host}/static/sources`, true, builtInExtensions);
+			ctx.state.workbench = new Workbench(`${ctx.protocol}://${ctx.host}/static/sources`, true, config.esm, builtInExtensions);
 		} else if (config.build.type === 'static') {
-			ctx.state.workbench = new Workbench(`${ctx.protocol}://${ctx.host}/static/build`, false);
+			ctx.state.workbench = new Workbench(`${ctx.protocol}://${ctx.host}/static/build`, false, config.esm);
 		} else if (config.build.type === 'cdn') {
-			ctx.state.workbench = new Workbench(config.build.uri, false);
+			ctx.state.workbench = new Workbench(config.build.uri, false, config.esm);
 		}
 		await next();
 	});
@@ -153,4 +157,3 @@ export default function (config: IConfig): Router.Middleware {
 
 	return router.routes();
 }
-

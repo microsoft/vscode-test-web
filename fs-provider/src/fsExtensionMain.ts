@@ -16,7 +16,7 @@ export function activate(context: ExtensionContext) {
 	const disposable = workspace.registerFileSystemProvider(SCHEME, new MemFileSystemProvider(SCHEME, serverBackedRootDirectory));
 	context.subscriptions.push(disposable);
 
-	console.log(`vscode-test-web-support fs provider registers for ${SCHEME}, initial content from ${serverUri.toString()}`);
+	console.log(`vscode-test-web-support fs provider registers for ${SCHEME}, initial content from ${serverUri.toString(/*skipEncoding*/ true)}`);
 }
 
 class ServerBackedFile implements File {
@@ -82,7 +82,7 @@ function isStat(e: any): e is FileStat {
 }
 
 async function getEntries(serverUri: Uri): Promise<Map<string, Entry>> {
-	const url = serverUri.with({ query: 'readdir' }).toString();
+	const url = serverUri.with({ query: 'readdir' }).toString(/*skipEncoding*/ true);
 	const response = await xhr({ url });
 	if (response.status === 200 && response.status <= 204) {
 		try {
@@ -101,30 +101,30 @@ async function getEntries(serverUri: Uri): Promise<Map<string, Entry>> {
 		} catch {
 			// ignore
 		}
-		console.log(`Invalid server response format for ${url.toString()}.`);
+		console.log(`Invalid server response format for ${url}.`);
 	} else {
-		console.log(`Invalid server response for ${url.toString()}. Status ${response.status}`);
+		console.log(`Invalid server response for ${url}. Status ${response.status}`);
 	}
 	return new Map();
 }
 
 async function getStats(serverUri: Uri): Promise<FileStat> {
-	const url = serverUri.with({ query: 'stat' }).toString();
+	const url = serverUri.with({ query: 'stat' }).toString(/*skipEncoding*/ true);
 	const response = await xhr({ url });
 	if (response.status === 200 && response.status <= 204) {
 		const res = JSON.parse(response.responseText);
 		if (isStat(res)) {
 			return res;
 		}
-		throw FileSystemError.FileNotFound(`Invalid server response for ${serverUri.toString()}.`);
+		throw FileSystemError.FileNotFound(`Invalid server response for ${serverUri.toString(/*skipEncoding*/ true)}.`);
 	}
-	throw FileSystemError.FileNotFound(`Invalid server response for ${serverUri.toString()}. Status ${response.status}.`);
+	throw FileSystemError.FileNotFound(`Invalid server response for ${serverUri.toString(/*skipEncoding*/ true)}. Status ${response.status}.`);
 }
 
 async function getContent(serverUri: Uri): Promise<Uint8Array> {
-	const response = await xhr({ url: serverUri.toString() });
+	const response = await xhr({ url: serverUri.toString(/*skipEncoding*/ true) });
 	if (response.status >= 200 && response.status <= 204) {
 		return response.body;
 	}
-	throw FileSystemError.FileNotFound(`Invalid server response for ${serverUri.toString()}. Status ${response.status}.`);
+	throw FileSystemError.FileNotFound(`Invalid server response for ${serverUri.toString(/*skipEncoding*/ true)}. Status ${response.status}.`);
 }
