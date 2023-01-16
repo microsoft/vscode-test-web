@@ -12,7 +12,7 @@ resources:
       type: github
       name: microsoft/vscode-engineering
       # ref: main
-      ref: lszomoru/variables
+      ref: lszomoru/malware-package
       endpoint: Monaco
 
 parameters:
