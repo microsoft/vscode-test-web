@@ -83,6 +83,7 @@ CLI options:
 | --open-devtools | If set, opens the dev tools in the browser. |
 | --verbose | If set, prints out more information when running the server. |
 | --printServerLog | If set, prints the server access log. |
+| --testRunnerDataDir | If set, the temporary folder for storing the VS Code builds used for running the tests |
 | folderPath |  A local folder to open VS Code on. The folder content will be available as a virtual file system and opened as workspace. |
 
 Corresponding options are available in the API.

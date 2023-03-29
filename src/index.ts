@@ -144,6 +144,11 @@ export interface Options {
 	 * The host name to start the server on. Defaults to `localhost`
 	 */
 	host?: string;
+
+	/**
+	 * The temporary folder for storing the VS Code builds used for running the tests. Defaults to `$CURRENT_WORKING_DIR/.vscode-test-web`.
+	 */
+	testRunnerDataDir?: string;
 }
 
 export interface Disposable {
@@ -214,7 +219,8 @@ async function getBuild(options: Options): Promise<Static | Sources> {
 		};
 	}
 	const quality = options.quality || options.version;
-	return await downloadAndUnzipVSCode(quality === 'stable' ? 'stable' : 'insider');
+	const testRunnerDataDir = options.testRunnerDataDir ?? path.resolve(process.cwd(), '.vscode-test-web')
+	return await downloadAndUnzipVSCode(quality === 'stable' ? 'stable' : 'insider', testRunnerDataDir);
 }
 
 export async function open(options: Options): Promise<Disposable> {
@@ -506,6 +512,7 @@ interface CommandLineOptions {
 	coi?: boolean;
 	esm?: boolean;
 	help?: boolean;
+	testRunnerDataDir?: string;
 }
 
 function showHelp() {
@@ -528,6 +535,7 @@ function showHelp() {
 	console.log(`  --open-devtools: If set, opens the dev tools. [Optional]`);
 	console.log(`  --verbose: If set, prints out more information when running the server. [Optional]`);
 	console.log(`  --printServerLog: If set, prints the server access log. [Optional]`);
+	console.log(`  --testRunnerDataDir: If set, the temporary folder for storing the VS Code builds used for running the tests. [Optional, defaults to '$CURRENT_WORKING_DIR/.vscode-test-web']`);
 	console.log(`  folderPath. A local folder to open VS Code on. The folder content will be available as a virtual file system. [Optional]`);
 }
 
@@ -544,7 +552,7 @@ async function cliMain(): Promise<void> {
 	console.log(`${manifest.name}: ${manifest.version}`);
 
 	const options: minimist.Opts = {
-		string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browser', 'browserType', 'quality', 'version', 'waitForDebugger', 'folder-uri', 'permission', 'extensionPath', 'extensionId', 'sourcesPath', 'host', 'port'],
+		string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browser', 'browserType', 'quality', 'version', 'waitForDebugger', 'folder-uri', 'permission', 'extensionPath', 'extensionId', 'sourcesPath', 'host', 'port', 'testRunnerDataDir'],
 		boolean: ['open-devtools', 'headless', 'hideServerLog', 'printServerLog', 'help', 'verbose', 'coi', 'esm'],
 		unknown: arg => {
 			if (arg.startsWith('-')) {
@@ -577,6 +585,7 @@ async function cliMain(): Promise<void> {
 	const host = validateStringOrUndefined(args, 'host');
 	const coi = validateBooleanOrUndefined(args, 'coi');
 	const esm = validateBooleanOrUndefined(args, 'esm');
+	const testRunnerDataDir = validateStringOrUndefined(args, 'testRunnerDataDir');
 
 	const waitForDebugger = validatePortNumber(args.waitForDebugger);
 
@@ -615,7 +624,8 @@ async function cliMain(): Promise<void> {
 			esm,
 			coi,
 			host,
-			port
+			port,
+			testRunnerDataDir
 		}).catch(e => {
 			console.log('Error running tests:', e);
 			process.exit(1);
@@ -639,7 +649,8 @@ async function cliMain(): Promise<void> {
 			esm,
 			coi,
 			host,
-			port
+			port,
+			testRunnerDataDir
 		})
 	}
 }

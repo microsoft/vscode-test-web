@@ -1,4 +1,8 @@
 # Changelog
+## 0.0.37
+ * new option `--testRunnerDataDir` to set the temporary folder for storing the VS Code builds used for running the tests
+
+
 ## 0.0.28
  * new option `--coi` to enable cross origin isolation.
 
