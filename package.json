@@ -1,6 +1,6 @@
 {
   "name": "@vscode/test-web",
-  "version": "0.0.37",
+  "version": "0.0.38",
   "scripts": {
     "install-extensions": "yarn --cwd=fs-provider && yarn --cwd=sample",
     "compile": "tsc -p ./ && yarn compile-fs-provider",
@@ -30,7 +30,7 @@
     "koa-mount": "^4.0.0",
     "koa-static": "^5.0.0",
     "minimist": "^1.2.8",
-    "playwright": "^1.32.1",
+    "playwright": "^1.32.2",
     "vscode-uri": "^3.0.7",
     "http-proxy-agent": "^5.0.0",
     "https-proxy-agent": "^5.0.1",
@@ -51,7 +51,7 @@
     "@types/decompress": "^4.2.4",
     "eslint": "^8.37.0",
     "eslint-plugin-header": "^3.1.1",
-    "typescript": "^5.0.2"
+    "typescript": "^5.0.3"
   },
   "license": "MIT",
   "author": "Visual Studio Code Team",

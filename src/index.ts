@@ -187,8 +187,15 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 		const context = await openBrowser(endpoint, options);
 		if (context) {
 			context.once('close', () => server.close());
-			await context.exposeFunction('codeAutomationLog', (type: 'warn' | 'error' | 'info', args: unknown[]) => {
-				console[type](...args);
+
+			type Severity = 'error' | 'warning' | 'info';
+			const unreportedOutput: { type: Severity, args: unknown[] }[] = [];
+			await context.exposeFunction('codeAutomationLog', (type: Severity, args: unknown[]) => {
+				try {
+					console[type](...args);
+				} catch (_e) {
+					unreportedOutput.push({ type, args });
+				}
 			});
 
 			await context.exposeFunction('codeAutomationExit', async (code: number) => {
@@ -196,6 +203,10 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 					await context.browser()?.close();
 				} catch (error) {
 					console.error(`Error when closing browser: ${error}`);
+				}
+				if (unreportedOutput.length) {
+					console.error(`There were ${unreportedOutput.length} messages that could not be reported to the console:`);
+					unreportedOutput.forEach(({ type, args }) => console[type](...args));
 				}
 				server.close();
 				if (code === 0) {
