@@ -134,7 +134,7 @@ export default function (config: IConfig): Router.Middleware {
 	router.use(async (ctx, next) => {
 		if (config.build.type === 'sources') {
 			const builtInExtensions = await getScannedBuiltinExtensions(config.build.location);
-			const productOverrides = await getProductOverridesContent(config.build.location);
+			const productOverrides = await getProductOverrides(config.build.location);
 			ctx.state.workbench = new Workbench(`${ctx.protocol}://${ctx.host}/static/sources`, true, config.esm, builtInExtensions, productOverrides);
 		} else if (config.build.type === 'static') {
 			ctx.state.workbench = new Workbench(`${ctx.protocol}://${ctx.host}/static/build`, false, config.esm);
@@ -160,7 +160,7 @@ export default function (config: IConfig): Router.Middleware {
 	return router.routes();
 }
 
-async function getProductOverridesContent(vsCodeDevLocation: string): Promise<Record<string, any> | undefined> {
+async function getProductOverrides(vsCodeDevLocation: string): Promise<Record<string, any> | undefined> {
 	try {
 		return JSON.parse((await fs.readFile(path.join(vsCodeDevLocation, 'product.overrides.json'))).toString());
 	} catch (e) {
