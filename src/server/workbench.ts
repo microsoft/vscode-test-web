@@ -34,7 +34,7 @@ function asJSON(value: unknown): string {
 }
 
 class Workbench {
-	constructor(readonly baseUrl: string, readonly dev: boolean, readonly esm: boolean, private readonly builtInExtensions: IScannedBuiltinExtension[] = [], private readonly productOverrides: string = '') { }
+	constructor(readonly baseUrl: string, readonly dev: boolean, readonly esm: boolean, private readonly builtInExtensions: IScannedBuiltinExtension[] = [], private readonly productOverrides?: Record<string, any>) { }
 
 	async render(workbenchWebConfiguration: IWorkbenchOptions): Promise<string> {
 		const values: { [key: string]: string } = {
@@ -42,7 +42,7 @@ class Workbench {
 			WORKBENCH_AUTH_SESSION: '',
 			WORKBENCH_WEB_BASE_URL: this.baseUrl,
 			WORKBENCH_BUILTIN_EXTENSIONS: asJSON(this.builtInExtensions),
-			WORKBENCH_PRODUCT_OVERRIDES: this.productOverrides,
+			WORKBENCH_PRODUCT_OVERRIDES: this.productOverrides ? asJSON(this.productOverrides) : '',
 			WORKBENCH_MAIN: this.getMain()
 		};
 
@@ -134,7 +134,7 @@ export default function (config: IConfig): Router.Middleware {
 	router.use(async (ctx, next) => {
 		if (config.build.type === 'sources') {
 			const builtInExtensions = await getScannedBuiltinExtensions(config.build.location);
-			const productOverrides = await getProductOverridesContent(config.build.location);
+			const productOverrides = await getProductOverrides(config.build.location);
 			ctx.state.workbench = new Workbench(`${ctx.protocol}://${ctx.host}/static/sources`, true, config.esm, builtInExtensions, productOverrides);
 		} else if (config.build.type === 'static') {
 			ctx.state.workbench = new Workbench(`${ctx.protocol}://${ctx.host}/static/build`, false, config.esm);
@@ -160,10 +160,10 @@ export default function (config: IConfig): Router.Middleware {
 	return router.routes();
 }
 
-async function getProductOverridesContent(vsCodeDevLocation: string): Promise<string> {
+async function getProductOverrides(vsCodeDevLocation: string): Promise<Record<string, any> | undefined> {
 	try {
-		return (await fs.readFile(path.join(vsCodeDevLocation, 'product.overrides.json'))).toString();
+		return JSON.parse((await fs.readFile(path.join(vsCodeDevLocation, 'product.overrides.json'))).toString());
 	} catch (e) {
-		return '';
+		return undefined;
 	}
 }
