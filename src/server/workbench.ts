@@ -34,7 +34,7 @@ function asJSON(value: unknown): string {
 }
 
 class Workbench {
-	constructor(readonly baseUrl: string, readonly dev: boolean, readonly esm: boolean, private readonly builtInExtensions: IScannedBuiltinExtension[] = []) { }
+	constructor(readonly baseUrl: string, readonly dev: boolean, readonly esm: boolean, private readonly builtInExtensions: IScannedBuiltinExtension[] = [], private readonly productOverrides: string = '') { }
 
 	async render(workbenchWebConfiguration: IWorkbenchOptions): Promise<string> {
 		const values: { [key: string]: string } = {
@@ -42,6 +42,7 @@ class Workbench {
 			WORKBENCH_AUTH_SESSION: '',
 			WORKBENCH_WEB_BASE_URL: this.baseUrl,
 			WORKBENCH_BUILTIN_EXTENSIONS: asJSON(this.builtInExtensions),
+			WORKBENCH_PRODUCT_OVERRIDES: this.productOverrides,
 			WORKBENCH_MAIN: this.getMain()
 		};
 
@@ -133,7 +134,8 @@ export default function (config: IConfig): Router.Middleware {
 	router.use(async (ctx, next) => {
 		if (config.build.type === 'sources') {
 			const builtInExtensions = await getScannedBuiltinExtensions(config.build.location);
-			ctx.state.workbench = new Workbench(`${ctx.protocol}://${ctx.host}/static/sources`, true, config.esm, builtInExtensions);
+			const productOverrides = await getProductOverridesContent(config.build.location);
+			ctx.state.workbench = new Workbench(`${ctx.protocol}://${ctx.host}/static/sources`, true, config.esm, builtInExtensions, productOverrides);
 		} else if (config.build.type === 'static') {
 			ctx.state.workbench = new Workbench(`${ctx.protocol}://${ctx.host}/static/build`, false, config.esm);
 		} else if (config.build.type === 'cdn') {
@@ -156,4 +158,12 @@ export default function (config: IConfig): Router.Middleware {
 	});
 
 	return router.routes();
+}
+
+async function getProductOverridesContent(vsCodeDevLocation: string): Promise<string> {
+	try {
+		return (await fs.readFile(path.join(vsCodeDevLocation, 'product.overrides.json'))).toString();
+	} catch (e) {
+		return '';
+	}
 }
