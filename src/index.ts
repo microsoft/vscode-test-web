@@ -183,9 +183,7 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 
 		const endpoint = `http://${host}:${port}`;
 
-		console.log(`Opening browser on ${endpoint}...`);
-		const context = await openBrowser(endpoint, options);
-		if (context) {
+		const configContext = async (context: playwright.BrowserContext) => {
 			context.once('close', () => server.close());
 
 			type Severity = 'error' | 'warning' | 'info';
@@ -215,7 +213,11 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 					e(new Error('Test failed'));
 				}
 			});
-		} else {
+
+		}
+		console.log(`Opening browser on ${endpoint}...`);
+		const context = await openBrowser(endpoint, options, configContext);
+		if (!context) {
 			server.close();
 			e(new Error('Can not run test as opening of browser failed.'));
 		}
@@ -253,9 +255,12 @@ export async function open(options: Options): Promise<Disposable> {
 	const server = await runServer(host, port, config);
 
 	const endpoint = `http://${host}:${port}`;
-	const context = await openBrowser(endpoint, options);
-	context?.once('close', () => server.close());
 
+	const configContext = async (context: playwright.BrowserContext) => {
+		context.once('close', () => server.close());
+	};
+
+	const context = await openBrowser(endpoint, options, configContext);
 	return {
 		dispose: () => {
 			server.close();
@@ -265,7 +270,7 @@ export async function open(options: Options): Promise<Disposable> {
 
 }
 
-async function openBrowser(endpoint: string, options: Options): Promise<playwright.BrowserContext | undefined> {
+async function openBrowser(endpoint: string, options: Options, configureContext: (context: playwright.BrowserContext) => Promise<void>): Promise<playwright.BrowserContext | undefined> {
 	if (options.browserType === 'none') {
 		return undefined;
 	}
@@ -292,6 +297,8 @@ async function openBrowser(endpoint: string, options: Options): Promise<playwrig
 	if (options.permissions) {
 		context.grantPermissions(options.permissions);
 	}
+
+	await configureContext(context);
 
 	// forcefully close browser if last page is closed. workaround for https://github.com/microsoft/playwright/issues/2946
 	let openPages = 0;
