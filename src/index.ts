@@ -183,22 +183,16 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 
 		const endpoint = `http://${host}:${port}`;
 
-		const configContext = async (context: playwright.BrowserContext) => {
-			context.once('close', () => server.close());
-
+		const configPage = async (page: playwright.Page, browser: playwright.Browser) => {
 			type Severity = 'error' | 'warning' | 'info';
 			const unreportedOutput: { type: Severity, args: unknown[] }[] = [];
-			await context.exposeFunction('codeAutomationLog', (type: Severity, args: unknown[]) => {
-				try {
-					console[type](...args);
-				} catch (_e) {
-					unreportedOutput.push({ type, args });
-				}
+			await page.exposeFunction('codeAutomationLog', (type: Severity, args: unknown[]) => {
+				console[type](...args);
 			});
 
-			await context.exposeFunction('codeAutomationExit', async (code: number) => {
+			await page.exposeFunction('codeAutomationExit', async (code: number) => {
 				try {
-					await context.browser()?.close();
+					await browser.close();
 				} catch (error) {
 					console.error(`Error when closing browser: ${error}`);
 				}
@@ -216,8 +210,10 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 
 		}
 		console.log(`Opening browser on ${endpoint}...`);
-		const context = await openBrowser(endpoint, options, configContext);
-		if (!context) {
+		const context = await openBrowser(endpoint, options, configPage);
+		if (context) {
+			context.once('close', () => server.close());
+		} else {
 			server.close();
 			e(new Error('Can not run test as opening of browser failed.'));
 		}
@@ -256,11 +252,8 @@ export async function open(options: Options): Promise<Disposable> {
 
 	const endpoint = `http://${host}:${port}`;
 
-	const configContext = async (context: playwright.BrowserContext) => {
-		context.once('close', () => server.close());
-	};
-
-	const context = await openBrowser(endpoint, options, configContext);
+	const context = await openBrowser(endpoint, options);
+	context?.once('close', () => server.close());
 	return {
 		dispose: () => {
 			server.close();
@@ -270,7 +263,7 @@ export async function open(options: Options): Promise<Disposable> {
 
 }
 
-async function openBrowser(endpoint: string, options: Options, configureContext: (context: playwright.BrowserContext) => Promise<void>): Promise<playwright.BrowserContext | undefined> {
+async function openBrowser(endpoint: string, options: Options, configPage?: (page: playwright.Page, browser: playwright.Browser) => Promise<void>): Promise<playwright.BrowserContext | undefined> {
 	if (options.browserType === 'none') {
 		return undefined;
 	}
@@ -298,8 +291,6 @@ async function openBrowser(endpoint: string, options: Options, configureContext:
 		context.grantPermissions(options.permissions);
 	}
 
-	await configureContext(context);
-
 	// forcefully close browser if last page is closed. workaround for https://github.com/microsoft/playwright/issues/2946
 	let openPages = 0;
 	context.on('page', page => {
@@ -314,6 +305,9 @@ async function openBrowser(endpoint: string, options: Options, configureContext:
 
 
 	const page = context.pages()[0] ?? await context.newPage();
+	if (configPage) {
+		await configPage(page, browser);
+	}
 	if (options.waitForDebugger) {
 		await page.waitForFunction(() => '__jsDebugIsReady' in globalThis);
 	}
