@@ -1,6 +1,6 @@
 {
   "name": "@vscode/test-web",
-  "version": "0.0.41",
+  "version": "0.0.42",
   "scripts": {
     "install-extensions": "yarn --cwd=fs-provider && yarn --cwd=sample",
     "compile": "tsc -p ./ && yarn compile-fs-provider",
@@ -25,12 +25,12 @@
   "dependencies": {
     "@koa/router": "^12.0.0",
     "@koa/cors": "^4.0.0",
-    "koa": "^2.14.1",
+    "koa": "^2.14.2",
     "koa-morgan": "^1.0.1",
     "koa-mount": "^4.0.0",
     "koa-static": "^5.0.0",
     "minimist": "^1.2.8",
-    "playwright": "^1.32.2",
+    "playwright": "^1.32.3",
     "vscode-uri": "^3.0.7",
     "http-proxy-agent": "^5.0.0",
     "https-proxy-agent": "^5.0.1",
@@ -48,12 +48,11 @@
     "@types/node": "16.x",
     "@types/gunzip-maybe": "^1.4.0",
     "@types/tar-fs": "^2.0.1",
-    "@typescript-eslint/eslint-plugin": "^5.57.0",
-    "@typescript-eslint/parser": "^5.57.0",
-    "@types/decompress": "^4.2.4",
-    "eslint": "^8.37.0",
+    "@typescript-eslint/eslint-plugin": "^5.58.0",
+    "@typescript-eslint/parser": "^5.58.0",
+    "eslint": "^8.38.0",
     "eslint-plugin-header": "^3.1.1",
-    "typescript": "^5.0.3"
+    "typescript": "^5.0.4"
   },
   "license": "MIT",
   "author": "Visual Studio Code Team",
