@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { promises as fs, existsSync, createWriteStream } from 'fs';
+import { promises as fs, existsSync } from 'fs';
 import * as path from 'path';
 
 import * as https from 'https';
@@ -12,8 +12,6 @@ import * as createHttpsProxyAgent from 'https-proxy-agent';
 import * as createHttpProxyAgent from 'http-proxy-agent';
 import { URL } from 'url';
 
-import * as decompress from 'decompress';
-import * as decompressTargz from 'decompress-targz';
 import { Static } from './main';
 
 interface DownloadInfo {
@@ -28,8 +26,15 @@ async function getLatestVersion(quality: 'stable' | 'insider'): Promise<Download
 
 const reset = '\x1b[G\x1b[0K';
 
-async function download(downloadUrl: string, destination: string, message: string) {
+async function downloadAndUntar(downloadUrl: string, destination: string, message: string) : Promise<void> {
 	process.stdout.write(message);
+
+	if (!existsSync(destination)) {
+		await fs.mkdir(destination, { recursive: true });
+	}
+
+	const tar = await import('tar-fs');
+	const gunzip = await import('gunzip-maybe');
 
 	return new Promise((resolve, reject) => {
 		const httpLibrary = downloadUrl.startsWith('https') ? https : http;
@@ -38,10 +43,6 @@ async function download(downloadUrl: string, destination: string, message: strin
 			const total = Number(res.headers['content-length']);
 			let received = 0;
 			let timeout: NodeJS.Timeout | undefined;
-
-			const outStream = createWriteStream(destination);
-			outStream.on('close', () => resolve(destination));
-			outStream.on('error', reject);
 
 			res.on('data', chunk => {
 				if (!timeout) {
@@ -62,29 +63,21 @@ async function download(downloadUrl: string, destination: string, message: strin
 			});
 
 
-			res.on('error', reject);
-			res.pipe(outStream);
+			const extract = res.pipe(gunzip()).pipe(tar.extract(destination, { strip: 1 }));
+			extract.on('finish', () => {
+				process.stdout.write(`Extracted to ${destination}\n`);
+				resolve();
+			});
+			extract.on('error', reject);
 		});
 	});
 }
 
-async function unzip(source: string, destination: string, message: string) {
-	process.stdout.write(message);
-	if (!existsSync(destination)) {
-		await fs.mkdir(destination, { recursive: true });
-	}
-
-	await decompress(source, destination, {
-		plugins: [
-			decompressTargz()
-		],
-		strip: 1
-	});
-	process.stdout.write(`${reset}${message}: complete\n`);
-}
-
 export async function downloadAndUnzipVSCode(quality: 'stable' | 'insider', vscodeTestDir: string): Promise<Static> {
 	const info = await getLatestVersion(quality);
+	if (!info.url.endsWith('.tar.gz')) {
+		throw new Error(`Unexpected download URL: ${info.url}. Should end with .tar.gz`);
+	}
 
 	const folderName = `vscode-web-${quality}-${info.version}`;
 
@@ -101,21 +94,12 @@ export async function downloadAndUnzipVSCode(quality: 'stable' | 'insider', vsco
 
 	const productName = `VS Code ${quality === 'stable' ? 'Stable' : 'Insiders'}`;
 
-	const tmpArchiveName = path.join(vscodeTestDir, `vscode-web-${quality}-${info.version}-tmp`);
 	try {
-		await download(info.url, tmpArchiveName, `Downloading ${productName}`);
-		await unzip(tmpArchiveName, downloadedPath, `Unpacking ${productName}`);
+		await downloadAndUntar(info.url, downloadedPath, `Downloading ${productName}`);
 		await fs.writeFile(path.join(downloadedPath, 'version'), folderName);
 	} catch (err) {
 		console.error(err);
 		throw Error(`Failed to download and unpack ${productName}`);
-	} finally {
-		try {
-			fs.unlink(tmpArchiveName);
-		} catch (e) {
-			// ignore
-		}
-
 	}
 	return { type: 'static', location: downloadedPath, quality, version: info.version };
 }
