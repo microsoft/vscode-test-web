@@ -75,9 +75,6 @@ async function downloadAndUntar(downloadUrl: string, destination: string, messag
 
 export async function downloadAndUnzipVSCode(quality: 'stable' | 'insider', vscodeTestDir: string): Promise<Static> {
 	const info = await getLatestVersion(quality);
-	if (!info.url.endsWith('.tar.gz')) {
-		throw new Error(`Unexpected download URL: ${info.url}. Should end with .tar.gz`);
-	}
 
 	const folderName = `vscode-web-${quality}-${info.version}`;
 
