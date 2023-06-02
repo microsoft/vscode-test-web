@@ -8,8 +8,8 @@ import * as path from 'path';
 
 import * as https from 'https';
 import * as http from 'http';
-import * as createHttpsProxyAgent from 'https-proxy-agent';
-import * as createHttpProxyAgent from 'http-proxy-agent';
+import { HttpsProxyAgent } from 'https-proxy-agent';
+import { HttpProxyAgent } from 'http-proxy-agent';
 import { URL } from 'url';
 
 import { Static } from './main';
@@ -26,7 +26,7 @@ async function getLatestVersion(quality: 'stable' | 'insider'): Promise<Download
 
 const reset = '\x1b[G\x1b[0K';
 
-async function downloadAndUntar(downloadUrl: string, destination: string, message: string) : Promise<void> {
+async function downloadAndUntar(downloadUrl: string, destination: string, message: string): Promise<void> {
 	process.stdout.write(message);
 
 	if (!existsSync(destination)) {
@@ -135,15 +135,15 @@ export async function fetchJSON<T>(api: string): Promise<T> {
 	}
 }
 
-let PROXY_AGENT: createHttpProxyAgent.HttpProxyAgent | undefined = undefined;
-let HTTPS_PROXY_AGENT: createHttpsProxyAgent.HttpsProxyAgent | undefined = undefined;
+let PROXY_AGENT: HttpProxyAgent<string> | undefined = undefined;
+let HTTPS_PROXY_AGENT: HttpsProxyAgent<string> | undefined = undefined;
 
 if (process.env.npm_config_proxy) {
-	PROXY_AGENT = createHttpProxyAgent(process.env.npm_config_proxy);
-	HTTPS_PROXY_AGENT = createHttpsProxyAgent(process.env.npm_config_proxy);
+	PROXY_AGENT = new HttpProxyAgent(process.env.npm_config_proxy);
+	HTTPS_PROXY_AGENT = new HttpsProxyAgent(process.env.npm_config_proxy);
 }
 if (process.env.npm_config_https_proxy) {
-	HTTPS_PROXY_AGENT = createHttpsProxyAgent(process.env.npm_config_https_proxy);
+	HTTPS_PROXY_AGENT = new HttpsProxyAgent(process.env.npm_config_https_proxy);
 }
 
 function getAgent(url: string): https.RequestOptions {
