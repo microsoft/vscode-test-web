@@ -9,7 +9,6 @@ import * as morgan from 'koa-morgan';
 import * as kstatic from 'koa-static';
 import * as kmount from 'koa-mount';
 import * as cors from '@koa/cors';
-import * as getstream from 'get-stream';
 import { basename, join } from 'path';
 import { IConfig } from './main';
 import workbench from './workbench';
@@ -70,7 +69,12 @@ export default async function createApp(config: IConfig): Promise<Koa> {
 		await next();
 		if (ctx.status === 200 && ctx.path.match(/\/(dev)?extensions\/.*\.js\.map$/) && ctx.body instanceof ReadStream) {
 			// we know it's a ReadStream as that's what kstatic uses
-			ctx.response.body = `{"version":3,"file":"${basename(ctx.path)}","sections":[{"offset":{"line":2,"column":0},"map":${await getstream(ctx.body)} }]}`;
+			const chunks: Buffer[] = [];
+			for await (const chunk of ctx.body) {
+				chunks.push(Buffer.from(chunk));
+			}
+			const bodyContent = Buffer.concat(chunks).toString("utf-8");
+			ctx.response.body = `{"version":3,"file":"${basename(ctx.path)}","sections":[{"offset":{"line":2,"column":0},"map":${bodyContent} }]}`;
 		}
 	});
 
