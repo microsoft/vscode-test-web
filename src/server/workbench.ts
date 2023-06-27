@@ -18,7 +18,6 @@ interface IDevelopmentOptions {
 	extensions?: URIComponents[];
 }
 
-
 interface IWorkbenchOptions {
 	additionalBuiltinExtensions?: (string | URIComponents | GalleryExtensionInfo)[];
 	developmentOptions?: IDevelopmentOptions;
@@ -45,7 +44,7 @@ class Workbench {
 			WORKBENCH_AUTH_SESSION: '',
 			WORKBENCH_WEB_BASE_URL: this.baseUrl,
 			WORKBENCH_BUILTIN_EXTENSIONS: asJSON(this.builtInExtensions),
-			WORKBENCH_MAIN: this.getMain()
+			WORKBENCH_MAIN: this.getMain(),
 		};
 
 		try {
@@ -67,7 +66,6 @@ class Workbench {
 			+ `<script src="${this.baseUrl}/out/vs/workbench/workbench.web.main.js"></script>`
 			+ `<script src="${this.baseUrl}/out/vs/code/browser/workbench/workbench.js"></script>`;
 	}
-
 
 	async renderCallback(): Promise<string> {
 		return await fetch(`${this.baseUrl}/out/vs/code/browser/workbench/callback.html`);
@@ -97,7 +95,7 @@ async function getWorkbenchOptions(
 		options.additionalBuiltinExtensions.push(...config.extensionIds);
 	}
 	if (config.extensionDevelopmentPath) {
-		const developmentOptions: IDevelopmentOptions = options.developmentOptions = {}
+		const developmentOptions: IDevelopmentOptions = (options.developmentOptions = {});
 
 		developmentOptions.extensions = await scanForExtensions(
 			config.extensionDevelopmentPath,

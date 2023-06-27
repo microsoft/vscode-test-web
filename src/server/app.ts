@@ -92,7 +92,7 @@ export default async function createApp(config: IConfig): Promise<Koa> {
 		app.use(kmount('/static/sources', kstatic(config.build.location, serveOptions)));
 		app.use(kmount('/static/sources', kstatic(join(config.build.location, 'resources', 'server'), serveOptions))); // for manifest.json, favicon and code icons.
 
-		// built-in extension are at 'extensions` as well as prebuilt extensions dowloaded from the marketplace
+		// built-in extension are at 'extensions` as well as prebuilt extensions downloaded from the marketplace
 		app.use(kmount(`/static/sources/extensions`, kstatic(join(config.build.location, prebuiltExtensionsLocation), serveOptions)));
 	}
 

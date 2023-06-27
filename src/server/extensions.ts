@@ -26,7 +26,7 @@ export async function scanForExtensions(
 					scheme: serverURI.scheme,
 					authority: serverURI.authority,
 					path: path.posix.join(serverURI.path, relativePosixFolderPath),
-				}
+				};
 			}
 		} catch {
 			return undefined;
@@ -71,13 +71,13 @@ export async function getScannedBuiltinExtensions(vsCodeDevLocation: string): Pr
 	const localExtensions : IScannedBuiltinExtension[] =  extensionsUtil.scanBuiltinExtensions(path.join(vsCodeDevLocation, 'extensions'));
 	const prebuiltExtensions : IScannedBuiltinExtension[] =  extensionsUtil.scanBuiltinExtensions(path.join(vsCodeDevLocation, prebuiltExtensionsLocation));
 	for (const ext of localExtensions) {
-		let browserMain : string | undefined = ext.packageJSON.browser;
+		let browserMain: string | undefined = ext.packageJSON.browser;
 		if (browserMain) {
 			if (!browserMain.endsWith('.js')) {
 				browserMain = browserMain + '.js';
 			}
 			const browserMainLocation = path.join(vsCodeDevLocation, 'extensions', ext.extensionPath, browserMain);
-			if (!await fileExists(browserMainLocation)) {
+			if (!(await fileExists(browserMainLocation))) {
 				console.log(`${browserMainLocation} not found. Make sure all extensions are compiled (use 'yarn watch-web').`);
 			}
 		}
