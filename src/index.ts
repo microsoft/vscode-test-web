@@ -16,7 +16,7 @@ import * as path from 'path';
 export type BrowserType = 'chromium' | 'firefox' | 'webkit' | 'none';
 export type VSCodeQuality = 'insiders' | 'stable';
 
-export type GalleryExtension = { readonly id: string; readonly preRelease?: boolean; }
+export type GalleryExtension = { readonly id: string; readonly preRelease?: boolean };
 export interface Options {
 
 	/**
@@ -171,21 +171,19 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 		extensionPaths: options.extensionPaths,
 		extensionIds: options.extensionIds,
 		coi: !!options.coi,
-		esm: !!options.esm
+		esm: !!options.esm,
 	};
-
 
 	const host = options.host ?? 'localhost';
 	const port = options.port ?? 3000;
 	const server = await runServer(host, port, config);
 
 	return new Promise(async (s, e) => {
-
 		const endpoint = `http://${host}:${port}`;
 
 		const configPage = async (page: playwright.Page, browser: playwright.Browser) => {
 			type Severity = 'error' | 'warning' | 'info';
-			const unreportedOutput: { type: Severity, args: unknown[] }[] = [];
+			const unreportedOutput: { type: Severity; args: unknown[] }[] = [];
 			await page.exposeFunction('codeAutomationLog', (type: Severity, args: unknown[]) => {
 				console[type](...args);
 			});
@@ -207,8 +205,7 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 					e(new Error('Test failed'));
 				}
 			});
-
-		}
+		};
 		console.log(`Opening browser on ${endpoint}...`);
 		const context = await openBrowser(endpoint, options, configPage);
 		if (context) {
@@ -224,11 +221,11 @@ async function getBuild(options: Options): Promise<Static | Sources> {
 	if (options.vsCodeDevPath) {
 		return {
 			type: 'sources',
-			location: options.vsCodeDevPath
+			location: options.vsCodeDevPath,
 		};
 	}
 	const quality = options.quality || options.version;
-	const testRunnerDataDir = options.testRunnerDataDir ?? path.resolve(process.cwd(), '.vscode-test-web')
+	const testRunnerDataDir = options.testRunnerDataDir ?? path.resolve(process.cwd(), '.vscode-test-web');
 	return await downloadAndUnzipVSCode(quality === 'stable' ? 'stable' : 'insider', testRunnerDataDir);
 }
 
@@ -243,7 +240,7 @@ export async function open(options: Options): Promise<Disposable> {
 		extensionPaths: options.extensionPaths,
 		extensionIds: options.extensionIds,
 		coi: !!options.coi,
-		esm: !!options.esm
+		esm: !!options.esm,
 	};
 
 	const host = options.host ?? 'localhost';
@@ -258,9 +255,8 @@ export async function open(options: Options): Promise<Disposable> {
 		dispose: () => {
 			server.close();
 			context?.browser()?.close();
-		}
-	}
-
+		},
+	};
 }
 
 async function openBrowser(endpoint: string, options: Options, configPage?: (page: playwright.Page, browser: playwright.Browser) => Promise<void>): Promise<playwright.BrowserContext | undefined> {
@@ -274,7 +270,7 @@ async function openBrowser(endpoint: string, options: Options, configPage?: (pag
 		return undefined;
 	}
 
-	const args: string[] = []
+	const args: string[] = [];
 	if (process.platform === 'linux' && options.browserType === 'chromium') {
 		args.push('--no-sandbox');
 	}
@@ -300,11 +296,10 @@ async function openBrowser(endpoint: string, options: Options, configPage?: (pag
 			if (openPages === 0) {
 				browser.close();
 			}
-		})
+		});
 	});
 
-
-	const page = context.pages()[0] ?? await context.newPage();
+	const page = context.pages()[0] ?? (await context.newPage());
 	if (configPage) {
 		await configPage(page, browser);
 	}
@@ -314,7 +309,7 @@ async function openBrowser(endpoint: string, options: Options, configPage?: (pag
 	if (options.verbose) {
 		page.on('console', (message) => {
 			console.log(message.text());
-		})
+		});
 	}
 
 	await page.goto(endpoint);
@@ -324,14 +319,13 @@ async function openBrowser(endpoint: string, options: Options, configPage?: (pag
 
 function validateStringOrUndefined(options: CommandLineOptions, name: keyof CommandLineOptions): string | undefined {
 	const value = options[name];
-	if (value === undefined || (typeof value === 'string')) {
+	if (value === undefined || typeof value === 'string') {
 		return value;
 	}
 	console.log(`'${name}' needs to be a string value.`);
 	showHelp();
 	process.exit(-1);
 }
-
 
 async function validatePathOrUndefined(options: CommandLineOptions, name: keyof CommandLineOptions, isFile?: boolean): Promise<string | undefined> {
 	const loc = validateStringOrUndefined(options, name);
@@ -340,7 +334,7 @@ async function validatePathOrUndefined(options: CommandLineOptions, name: keyof 
 
 function validateBooleanOrUndefined(options: CommandLineOptions, name: keyof CommandLineOptions): boolean | undefined {
 	const value = options[name];
-	if (value === undefined || (typeof value === 'boolean')) {
+	if (value === undefined || typeof value === 'boolean') {
 		return value;
 	}
 	console.log(`'${name}' needs to be a boolean value.`);
@@ -360,7 +354,6 @@ function validatePrintServerLog(options: CommandLineOptions): boolean {
 	return false;
 }
 
-
 function validateBrowserType(options: CommandLineOptions): BrowserType {
 	const browserType = options.browser || options.browserType;
 	if (browserType === undefined) {
@@ -370,7 +363,7 @@ function validateBrowserType(options: CommandLineOptions): BrowserType {
 		console.log(`Ignoring browserType option '${options.browserType}' as browser option '${options.browser}' is set.`);
 	}
 
-	if ((typeof browserType === 'string') && ['chromium', 'firefox', 'webkit', 'none'].includes(browserType)) {
+	if (typeof browserType === 'string' && ['chromium', 'firefox', 'webkit', 'none'].includes(browserType)) {
 		return browserType as BrowserType;
 	}
 	console.log(`Invalid browser option ${browserType}.`);
@@ -380,7 +373,7 @@ function validateBrowserType(options: CommandLineOptions): BrowserType {
 
 function validatePermissions(permissions: unknown): string[] | undefined {
 	if (permissions === undefined) {
-		return undefined
+		return undefined;
 	}
 	function isValidPermission(p: unknown): p is string {
 		return typeof p === 'string';
@@ -399,7 +392,7 @@ function validatePermissions(permissions: unknown): string[] | undefined {
 
 async function validateExtensionPaths(extensionPaths: unknown): Promise<string[] | undefined> {
 	if (extensionPaths === undefined) {
-		return undefined
+		return undefined;
 	}
 	if (!Array.isArray(extensionPaths)) {
 		extensionPaths = [extensionPaths];
@@ -425,7 +418,7 @@ const EXTENSION_IDENTIFIER_PATTERN = /^([a-z0-9A-Z][a-z0-9-A-Z]*\.[a-z0-9A-Z][a-
 
 async function validateExtensionIds(extensionIds: unknown): Promise<GalleryExtension[] | undefined> {
 	if (extensionIds === undefined) {
-		return undefined
+		return undefined;
 	}
 	if (!Array.isArray(extensionIds)) {
 		extensionIds = [extensionIds];
@@ -433,7 +426,7 @@ async function validateExtensionIds(extensionIds: unknown): Promise<GalleryExten
 	if (Array.isArray(extensionIds)) {
 		const res: GalleryExtension[] = [];
 		for (const extensionId of extensionIds) {
-			const m = (typeof extensionId === 'string' && extensionId.match(EXTENSION_IDENTIFIER_PATTERN));
+			const m = typeof extensionId === 'string' && extensionId.match(EXTENSION_IDENTIFIER_PATTERN);
 			if (m) {
 				if (m[2]) {
 					res.push({ id: m[1], preRelease: true });
@@ -457,12 +450,12 @@ async function validateExtensionIds(extensionIds: unknown): Promise<GalleryExten
 async function validatePath(loc: string, isFile?: boolean): Promise<string> {
 	loc = path.resolve(loc);
 	if (isFile) {
-		if (!await fileExists(loc)) {
+		if (!(await fileExists(loc))) {
 			console.log(`'${loc}' must be an existing file.`);
 			process.exit(-1);
 		}
 	} else {
-		if (!await directoryExists(loc)) {
+		if (!(await directoryExists(loc))) {
 			console.log(`'${loc}' must be an existing folder.`);
 			process.exit(-1);
 		}
@@ -480,7 +473,7 @@ function validateQuality(quality: unknown, version: unknown, vsCodeDevPath: stri
 		console.log(`Sources folder is provided as input, quality is ignored.`);
 		return undefined;
 	}
-	if (quality === undefined || ((typeof quality === 'string') && ['insiders', 'stable'].includes(quality))) {
+	if (quality === undefined || (typeof quality === 'string' && ['insiders', 'stable'].includes(quality))) {
 		return quality as VSCodeQuality;
 	}
 	if (version === 'sources') {
@@ -501,7 +494,6 @@ function validatePortNumber(port: unknown): number | undefined {
 	}
 	return undefined;
 }
-
 
 interface CommandLineOptions {
 	browser?: string;
@@ -573,7 +565,7 @@ async function cliMain(): Promise<void> {
 				process.exit();
 			}
 			return true;
-		}
+		},
 	};
 	const args = minimist<CommandLineOptions>(process.argv.slice(2), options);
 	if (args.help) {
@@ -637,11 +629,11 @@ async function cliMain(): Promise<void> {
 			coi,
 			host,
 			port,
-			testRunnerDataDir
+			testRunnerDataDir,
 		}).catch(e => {
 			console.log('Error running tests:', e);
 			process.exit(1);
-		})
+		});
 	} else {
 		open({
 			extensionDevelopmentPath,
@@ -662,8 +654,8 @@ async function cliMain(): Promise<void> {
 			coi,
 			host,
 			port,
-			testRunnerDataDir
-		})
+			testRunnerDataDir,
+		});
 	}
 }
 
