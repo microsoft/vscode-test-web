@@ -56,7 +56,7 @@ suite('Workspace folder access', () => {
 		let array = await vscode.workspace.fs.readFile(getUri(path));
 		const content = new TextDecoder().decode(array);
 		assert.deepStrictEqual(content, expected);
-		await assertStats(path, true, content.length);
+		await assertStats(path, true, array.length);
 	}
 
 	async function assertStats(path: string, isFile: boolean, expectedSize?: number) {
@@ -80,14 +80,15 @@ suite('Workspace folder access', () => {
 	test('Folder contents', async () => {
 		await assertEntries('/folder', ['x.txt'], ['.bar']);
 		await assertEntries('/folder/', ['x.txt'], ['.bar']);
-		await assertEntries('/', ['hello.txt', 'world.txt'], ['folder']);
+		await assertEntries('/', ['hello.txt', 'world.txt'], ['folder', 'folder_with_utf_8_🧿']);
 		await assertEntries('/folder/.bar', ['.foo'], []);
+		await assertEntries('/folder_with_utf_8_🧿', ['!#$%&\'()+,-.0123456789;=@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{}~'], []);
 	});
 
 	test('File contents', async () => {
 		await assertContent('/hello.txt', '// hello');
 		await assertContent('/world.txt', '// world');
-		await assertContent('/folder/x.txt', '// x');
+		await assertContent('/folder_with_utf_8_🧿/!#$%&\'()+,-.0123456789;=@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{}~', 'test_utf_8_🧿');
 	});
 
 	test('File stats', async () => {
@@ -97,23 +98,24 @@ suite('Workspace folder access', () => {
 		await assertStats('/folder/', false);
 		await assertStats('/folder/.bar', false);
 		await assertStats('/folder/.bar/.foo', true, 3);
+		await assertStats('/folder_with_utf_8_🧿/!#$%&\'()+,-.0123456789;=@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{}~', true, 15);
 		await assertStats('/', false);
 	});
 
 	test('Create and delete directory', async () => {
 		await createFolder('/more');
-		await assertEntries('/', ['hello.txt', 'world.txt'], ['folder', 'more']);
+		await assertEntries('/', ['hello.txt', 'world.txt'], ['folder', 'folder_with_utf_8_🧿', 'more' ]);
 		await deleteEntry('/more', false);
-		await assertEntries('/', ['hello.txt', 'world.txt'], ['folder']);
+		await assertEntries('/', ['hello.txt', 'world.txt'], ['folder', 'folder_with_utf_8_🧿']);
 	});
 
 	test('Create and delete file', async () => {
 		await createFile('/more.txt', 'content');
-		await assertEntries('/', ['hello.txt', 'world.txt', 'more.txt'], ['folder']);
+		await assertEntries('/', ['hello.txt', 'world.txt', 'more.txt'], ['folder', 'folder_with_utf_8_🧿']);
 		await assertContent('/more.txt', 'content');
 
 		await deleteEntry('/more.txt', true);
-		await assertEntries('/', ['hello.txt', 'world.txt'], ['folder']);
+		await assertEntries('/', ['hello.txt', 'world.txt'], ['folder', 'folder_with_utf_8_🧿']);
 
 		await createFile('/folder/more.txt', 'moreContent');
 		await assertEntries('/folder', ['x.txt', 'more.txt'], ['.bar']);

@@ -11,7 +11,7 @@ const SCHEME = 'vscode-test-web';
 
 export function activate(context: ExtensionContext) {
 	const serverUri = context.extensionUri.with({ path: '/static/mount', query: undefined });
-	const serverBackedRootDirectory = new ServerBackedDirectory(serverUri, '');
+	const serverBackedRootDirectory = new ServerBackedDirectory(serverUri, [], '');
 
 	const disposable = workspace.registerFileSystemProvider(SCHEME, new MemFileSystemProvider(SCHEME, serverBackedRootDirectory));
 	context.subscriptions.push(disposable);
@@ -23,11 +23,11 @@ class ServerBackedFile implements File {
 	readonly type = FileType.File;
 	private _stats: Promise<FileStat> | undefined;
 	private _content: Promise<Uint8Array> | undefined;
-	constructor(private readonly _serverUri: Uri, public name: string) {
+	constructor(private readonly _serverRoot: Uri, public pathSegments: readonly string[], public name: string) {
 	}
 	get stats(): Promise<FileStat> {
 		if (this._stats === undefined) {
-			this._stats = getStats(this._serverUri);
+			this._stats = getStats(this._serverRoot, this.pathSegments);
 		}
 		return this._stats;
 	}
@@ -36,7 +36,7 @@ class ServerBackedFile implements File {
 	}
 	get content(): Promise<Uint8Array> {
 		if (this._content === undefined) {
-			this._content = getContent(this._serverUri);
+			this._content = getContent(this._serverRoot, this.pathSegments);
 		}
 		return this._content;
 	}
@@ -49,11 +49,11 @@ class ServerBackedDirectory implements Directory {
 	readonly type = FileType.Directory;
 	private _stats: Promise<FileStat> | undefined;
 	private _entries: Promise<Map<string, Entry>> | undefined;
-	constructor(private readonly _serverUri: Uri, public name: string) {
+	constructor(private readonly _serverRoot: Uri, public pathSegments: readonly string[], public name: string) {
 	}
 	get stats(): Promise<FileStat> {
 		if (this._stats === undefined) {
-			this._stats = getStats(this._serverUri);
+			this._stats = getStats(this._serverRoot, this.pathSegments);
 		}
 		return this._stats;
 	}
@@ -62,7 +62,7 @@ class ServerBackedDirectory implements Directory {
 	}
 	get entries(): Promise<Map<string, Entry>> {
 		if (this._entries === undefined) {
-			this._entries = getEntries(this._serverUri);
+			this._entries = getEntries(this._serverRoot, this.pathSegments);
 		}
 		return this._entries;
 	}
@@ -81,8 +81,12 @@ function isStat(e: any): e is FileStat {
 	return e && (e.type === FileType.Directory || e.type === FileType.File) && typeof e.ctime === 'number' && typeof e.mtime === 'number' && typeof e.size === 'number';
 }
 
-async function getEntries(serverUri: Uri): Promise<Map<string, Entry>> {
-	const url = serverUri.with({ query: 'readdir' }).toString(/*skipEncoding*/ true);
+function getServerUri(serverRoot: Uri, pathSegments: readonly string[]): Uri {
+	return Uri.joinPath(serverRoot, ...pathSegments);
+}
+
+async function getEntries(serverRoot: Uri, pathSegments: readonly string[]): Promise<Map<string, Entry>> {
+	const url = getServerUri(serverRoot, pathSegments).with({ query: 'readdir' }).toString(/*skipEncoding*/ true);
 	const response = await xhr({ url });
 	if (response.status === 200 && response.status <= 204) {
 		try {
@@ -91,8 +95,8 @@ async function getEntries(serverUri: Uri): Promise<Map<string, Entry>> {
 				const entries = new Map();
 				for (const r of res) {
 					if (isEntry(r)) {
-						const childPath = Uri.joinPath(serverUri, r.name);
-						const newEntry: Entry = r.type === FileType.Directory ? new ServerBackedDirectory(childPath, r.name) : new ServerBackedFile(childPath, r.name);
+						const newPathSegments = [...pathSegments, encodeURIComponent(r.name)];
+						const newEntry: Entry = r.type === FileType.Directory ? new ServerBackedDirectory(serverRoot, newPathSegments, r.name) : new ServerBackedFile(serverRoot, newPathSegments, r.name);
 						entries.set(newEntry.name, newEntry);
 					}
 				}
@@ -108,7 +112,8 @@ async function getEntries(serverUri: Uri): Promise<Map<string, Entry>> {
 	return new Map();
 }
 
-async function getStats(serverUri: Uri): Promise<FileStat> {
+async function getStats(serverRoot: Uri, pathSegments: readonly string[]): Promise<FileStat> {
+	const serverUri = getServerUri(serverRoot, pathSegments);
 	const url = serverUri.with({ query: 'stat' }).toString(/*skipEncoding*/ true);
 	const response = await xhr({ url });
 	if (response.status === 200 && response.status <= 204) {
@@ -121,7 +126,8 @@ async function getStats(serverUri: Uri): Promise<FileStat> {
 	throw FileSystemError.FileNotFound(`Invalid server response for ${serverUri.toString(/*skipEncoding*/ true)}. Status ${response.status}.`);
 }
 
-async function getContent(serverUri: Uri): Promise<Uint8Array> {
+async function getContent(serverRoot: Uri, pathSegments: readonly string[]): Promise<Uint8Array> {
+	const serverUri = getServerUri(serverRoot, pathSegments);
 	const response = await xhr({ url: serverUri.toString(/*skipEncoding*/ true) });
 	if (response.status >= 200 && response.status <= 204) {
 		return response.body;

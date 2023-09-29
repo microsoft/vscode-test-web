@@ -32,7 +32,7 @@ function fileOps(mountPrefix: string, folderMountPath: string): Router.Middlewar
 	const router = new Router();
 	router.get(`${mountPrefix}(/.*)?`, async (ctx, next) => {
 		if (ctx.query.stat !== undefined) {
-			const p = path.join(folderMountPath, ctx.path.substring(mountPrefix.length));
+			const p = path.join(folderMountPath, decodeURIComponent(ctx.path.substring(mountPrefix.length)));
 			try {
 				const stats = await fs.stat(p);
 				ctx.body = {
@@ -45,7 +45,7 @@ function fileOps(mountPrefix: string, folderMountPath: string): Router.Middlewar
 				ctx.body = { error: (e as NodeJS.ErrnoException).code };
 			}
 		} else if (ctx.query.readdir !== undefined) {
-			const p = path.join(folderMountPath, ctx.path.substring(mountPrefix.length));
+			const p = path.join(folderMountPath, decodeURIComponent(ctx.path.substring(mountPrefix.length)));
 			try {
 				const entries = await fs.readdir(p, { withFileTypes: true });
 				ctx.body = entries.map((d) => ({ name: d.name, type: getFileType(d) }));
