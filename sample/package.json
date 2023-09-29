@@ -11,7 +11,6 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:vscode-test-web-sample.helloWorld",
 		"*"
 	],
 	"browser": "./dist/web/extension.js",
@@ -33,14 +32,14 @@
 	},
 	"devDependencies": {
 		"@types/vscode": "^1.81.0",
-		"@types/mocha": "10.0.1",
+		"@types/mocha": "10.0.2",
 		"mocha": "^10.2.0",
-		"typescript": "^5.1.6",
+		"typescript": "^5.2.2",
 		"ts-loader": "^9.4.4",
 		"webpack": "^5.88.2",
 		"webpack-cli": "^5.1.4",
-		"@types/webpack-env": "^1.18.1",
-		"assert": "^2.0.0",
+		"@types/webpack-env": "^1.18.2",
+		"assert": "^2.1.0",
 		"process": "^0.11.10"
 	}
 }

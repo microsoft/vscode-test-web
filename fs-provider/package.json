@@ -36,7 +36,7 @@
 	},
 	"devDependencies": {
 		"@types/vscode": "^1.81.0",
-		"@types/webpack-env": "^1.18.1",
+		"@types/webpack-env": "^1.18.2",
 		"ts-loader": "^9.4.4",
 		"webpack": "^5.88.2",
 		"webpack-cli": "^5.1.4",
