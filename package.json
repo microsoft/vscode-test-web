@@ -31,6 +31,7 @@
     "koa-static": "^5.0.0",
     "minimist": "^1.2.8",
     "playwright": "^1.38.1",
+    "@playwright/browser-chromium": "^1.38.1",
     "vscode-uri": "^3.0.7",
     "http-proxy-agent": "^7.0.0",
     "https-proxy-agent": "^7.0.2",
