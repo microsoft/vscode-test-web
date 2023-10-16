@@ -26,11 +26,13 @@ export default async function createApp(config: IConfig): Promise<Koa> {
 			allowMethods: ['GET'],
 			credentials: true,
 			origin: (ctx: Koa.Context) => {
+				const origin = ctx.get('Origin');
 				if (
-					/^https:\/\/[^.]+\.vscode-cdn\.net$/.test(ctx.get('Origin')) || // needed for the webviewContent
-					/^https:\/\/[^.]+\.vscode-webview\.net$/.test(ctx.get('Origin'))
+					/^https:\/\/[^.]+\.vscode-cdn\.net$/.test(origin) || // needed for the webviewContent
+					/^https:\/\/[^.]+\.vscode-webview\.net$/.test(origin) ||
+					new RegExp(`^${ctx.protocol}://[^.]+\\.${ctx.host}$`).test(origin) // match subdomains of localhost
 				) {
-					return ctx.get('Origin');
+					return origin;
 				}
 
 				return undefined as any;
@@ -38,7 +40,7 @@ export default async function createApp(config: IConfig): Promise<Koa> {
 		})
 	);
 
-	if (config.build.type !== 'sources') {
+	if (config.build.type !== 'sources' && config.build.type !== 'static') {
 		// CSP: frame-ancestors
 		app.use((ctx, next) => {
 			ctx.set('Content-Security-Policy', `frame-ancestors 'none'`);

@@ -137,7 +137,11 @@ export default function (config: IConfig): Router.Middleware {
 			const productOverrides = await getProductOverrides(config.build.location);
 			ctx.state.workbench = new Workbench(`${ctx.protocol}://${ctx.host}/static/sources`, true, config.esm, builtInExtensions, productOverrides);
 		} else if (config.build.type === 'static') {
-			ctx.state.workbench = new Workbench(`${ctx.protocol}://${ctx.host}/static/build`, false, config.esm);
+			const baseUrl = `${ctx.protocol}://${ctx.host}/static/build`;
+			const baseUrlTemplate = `${ctx.protocol}://{{uuid}}.${ctx.host}/static/build`;
+			ctx.state.workbench = new Workbench(baseUrl, false, config.esm, [], {
+				webEndpointUrlTemplate: baseUrlTemplate,
+			});
 		} else if (config.build.type === 'cdn') {
 			ctx.state.workbench = new Workbench(config.build.uri, false, config.esm);
 		}
