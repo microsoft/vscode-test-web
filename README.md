@@ -31,11 +31,19 @@ vscode-test-web --browserType=chromium --extensionDevelopmentPath=$extensionLoca
 
 Open VS Code in the Browser on a folder with test data from the local disk:
 
-```
+```sh
 vscode-test-web --browserType=chromium --extensionDevelopmentPath=$extensionLocation $testDataLocation
 ```
 
 VS Code for the Web will open on a virtual workspace (scheme `vscode-test-web`), backed by a file system provider that gets the file/folder data from the local disk. Changes to the file system are kept in memory and are not written back to disk.
+
+Open VS Code in the Browser with external network access:
+
+```sh
+vscode-test-web --browserType=chromium --browserOptions=--disable-web-security extensionDevelopmentPath=$extensionLocation
+```
+
+This allows the extension being tested to make network requests to external hosts.
 
 Via API:
 
@@ -68,6 +76,7 @@ CLI options:
 |Option|Argument Description|
 |-----|-----|
 | --browser | The browser to launch: `chromium` (default), `firefox`, `webkit` or `none`. |
+| --browserOptions | Command line arguments to use when launching the browser instance. |
 | --extensionDevelopmentPath | A path pointing to an extension under development to include. |
 | --extensionTestsPath | A path to a test module to run. |
 | --quality | `insiders` (default),  or `stable`. Ignored when sourcesPath is provided. |
