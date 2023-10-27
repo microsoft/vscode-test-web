@@ -16,10 +16,10 @@ jobs:
         with:
           node-version: 16.x
       - name: Install root project dependencies
-        run: yarn
+        run: npm ci
       - name: Install extensions dependencies
-        run: yarn install-extensions
+        run: npm run install-extensions
       - name: Run tests
         uses: GabrielBB/xvfb-action@v1.0
         with:
-          run: yarn sample-tests
+          run: npm run sample-tests
