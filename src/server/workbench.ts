@@ -135,12 +135,16 @@ export default function (config: IConfig): Router.Middleware {
 		if (config.build.type === 'sources') {
 			const builtInExtensions = await getScannedBuiltinExtensions(config.build.location);
 			const productOverrides = await getProductOverrides(config.build.location);
-			ctx.state.workbench = new Workbench(`${ctx.protocol}://${ctx.host}/static/sources`, true, config.esm, builtInExtensions, productOverrides);
+			ctx.state.workbench = new Workbench(`${ctx.protocol}://${ctx.host}/static/sources`, true, config.esm, builtInExtensions, {
+				...productOverrides,
+				webEndpointUrlTemplate: `${ctx.protocol}://{{uuid}}.${ctx.host}/static/sources`,
+				webviewContentExternalBaseUrlTemplate: `${ctx.protocol}://{{uuid}}.${ctx.host}/static/sources/out/vs/workbench/contrib/webview/browser/pre/`
+			});
 		} else if (config.build.type === 'static') {
 			const baseUrl = `${ctx.protocol}://${ctx.host}/static/build`;
-			const baseUrlTemplate = `${ctx.protocol}://{{uuid}}.${ctx.host}/static/build`;
 			ctx.state.workbench = new Workbench(baseUrl, false, config.esm, [], {
-				webEndpointUrlTemplate: baseUrlTemplate,
+				webEndpointUrlTemplate: `${ctx.protocol}://{{uuid}}.${ctx.host}/static/build`,
+				webviewContentExternalBaseUrlTemplate: `${ctx.protocol}://{{uuid}}.${ctx.host}/static/build/out/vs/workbench/contrib/webview/browser/pre/`
 			});
 		} else if (config.build.type === 'cdn') {
 			ctx.state.workbench = new Workbench(config.build.uri, false, config.esm);
