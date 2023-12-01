@@ -99,13 +99,13 @@ Corresponding options are available in the API.
 
 ## Development
 
-- `yarn && yarn install-extensions`
+- `npm i && npm run install-extensions`
 - Make necessary changes in [`src`](./src)
-- `yarn compile` (or `yarn watch`)
+- `npm run compile` (or `npm run watch`)
 
-- run `yarn sample` to launch VS Code Browser with the `sample` extension bundled in this repo.
+- run `npm run sample` to launch VS Code Browser with the `sample` extension bundled in this repo.
 
-- run `yarn sample-tests` to launch VS Code Browser running the extension tests of the  `sample` extension bundled in this repo.
+- run `npm run sample-tests` to launch VS Code Browser running the extension tests of the  `sample` extension bundled in this repo.
 
 
 ## License
