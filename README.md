@@ -40,7 +40,7 @@ VS Code for the Web will open on a virtual workspace (scheme `vscode-test-web`),
 Open VS Code in the Browser with external network access:
 
 ```sh
-vscode-test-web --browserType=chromium --browserOptions=--disable-web-security extensionDevelopmentPath=$extensionLocation
+vscode-test-web --browserType=chromium --browserOption=--disable-web-security extensionDevelopmentPath=$extensionLocation
 ```
 
 This allows the extension being tested to make network requests to external hosts.
@@ -76,7 +76,7 @@ CLI options:
 |Option|Argument Description|
 |-----|-----|
 | --browser | The browser to launch: `chromium` (default), `firefox`, `webkit` or `none`. |
-| --browserOptions | Command line arguments to use when launching the browser instance. |
+| --browserOption | Command line argument to use when launching the browser instance. Argument can be provided multiple times. |
 | --extensionDevelopmentPath | A path pointing to an extension under development to include. |
 | --extensionTestsPath | A path to a test module to run. |
 | --quality | `insiders` (default),  or `stable`. Ignored when sourcesPath is provided. |

@@ -35,7 +35,6 @@
     "koa-static": "^5.0.0",
     "minimist": "^1.2.8",
     "playwright": "^1.38.1",
-    "shell-quote": "^1.8.1",
     "tar-fs": "^3.0.4",
     "vscode-uri": "^3.0.7"
   },
