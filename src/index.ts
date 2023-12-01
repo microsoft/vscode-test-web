@@ -25,6 +25,11 @@ export interface Options {
 	browserType: BrowserType;
 
 	/**
+	 * Browser command line options.
+	 */
+	browserOptions?: string[];
+
+	/**
 	 * Absolute path to folder that contains one or more extensions (in subfolders).
 	 * Extension folders include a `package.json` extension manifest.
 	 */
@@ -271,6 +276,11 @@ async function openBrowser(endpoint: string, options: Options, configPage?: (pag
 	}
 
 	const args: string[] = [];
+
+	if (options.browserOptions) {
+		args.push(...options.browserOptions);
+	}
+
 	if (process.platform === 'linux' && options.browserType === 'chromium') {
 		args.push('--no-sandbox');
 	}
@@ -385,7 +395,26 @@ function validatePermissions(permissions: unknown): string[] | undefined {
 		return permissions;
 	}
 
-	console.log(`Invalid permission`);
+	console.log(`Invalid permission: ${permissions}`);
+	showHelp();
+	process.exit(-1);
+}
+
+function validateBrowserOptions(browserOptions: unknown): string[] | undefined {
+	if (browserOptions === undefined) {
+		return undefined;
+	}
+	function isValidOption(p: unknown): p is string {
+		return typeof p === 'string';
+	}
+	if (isValidOption(browserOptions)) {
+		return [browserOptions];
+	}
+	if (Array.isArray(browserOptions) && browserOptions.every(isValidOption)) {
+		return browserOptions;
+	}
+
+	console.log(`Invalid browser option: ${browserOptions}`);
 	showHelp();
 	process.exit(-1);
 }
@@ -497,6 +526,7 @@ function validatePortNumber(port: unknown): number | undefined {
 
 interface CommandLineOptions {
 	browser?: string;
+	browserOptions?: string;
 	browserType?: string;
 	extensionDevelopmentPath?: string;
 	extensionTestsPath?: string;
@@ -521,7 +551,8 @@ interface CommandLineOptions {
 
 function showHelp() {
 	console.log('Usage:');
-	console.log(`  --browser 'chromium' | 'firefox' | 'webkit' | 'none': The browser to launch. [Optional, defaults to 'chromium']`)
+	console.log(`  --browser 'chromium' | 'firefox' | 'webkit' | 'none': The browser to launch. [Optional, defaults to 'chromium']`);
+	console.log(`  --browserOption option: Command line argument to use when launching the browser instance. [Optional, Multiple]`)
 	console.log(`  --extensionDevelopmentPath path: A path pointing to an extension under development to include. [Optional]`);
 	console.log(`  --extensionTestsPath path: A path to a test module to run. [Optional]`);
 	console.log(`  --quality 'insiders' | 'stable' [Optional, default 'insiders', ignored when running from sources]`);
@@ -556,7 +587,7 @@ async function cliMain(): Promise<void> {
 	console.log(`${manifest.name}: ${manifest.version}`);
 
 	const options: minimist.Opts = {
-		string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browser', 'browserType', 'quality', 'version', 'waitForDebugger', 'folder-uri', 'permission', 'extensionPath', 'extensionId', 'sourcesPath', 'host', 'port', 'testRunnerDataDir'],
+		string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browser', 'browserOption', 'browserType', 'quality', 'version', 'waitForDebugger', 'folder-uri', 'permission', 'extensionPath', 'extensionId', 'sourcesPath', 'host', 'port', 'testRunnerDataDir'],
 		boolean: ['open-devtools', 'headless', 'hideServerLog', 'printServerLog', 'help', 'verbose', 'coi', 'esm'],
 		unknown: arg => {
 			if (arg.startsWith('-')) {
@@ -573,6 +604,7 @@ async function cliMain(): Promise<void> {
 		process.exit();
 	}
 
+	const browserOptions = validateBrowserOptions(args.browserOption);
 	const browserType = validateBrowserType(args);
 	const extensionTestsPath = await validatePathOrUndefined(args, 'extensionTestsPath', true);
 	const extensionDevelopmentPath = await validatePathOrUndefined(args, 'extensionDevelopmentPath');
@@ -612,6 +644,7 @@ async function cliMain(): Promise<void> {
 		runTests({
 			extensionTestsPath,
 			extensionDevelopmentPath,
+			browserOptions,
 			browserType,
 			quality,
 			devTools,
@@ -637,6 +670,7 @@ async function cliMain(): Promise<void> {
 	} else {
 		open({
 			extensionDevelopmentPath,
+			browserOptions,
 			browserType,
 			quality,
 			devTools,
