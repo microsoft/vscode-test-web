@@ -3,8 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { EventEmitter, Event, Uri, FileSystemProvider, Disposable, FileType, FileStat, FileSystemError, FileChangeType, FileChangeEvent } from 'vscode';
+import { EventEmitter, Event, Uri, FileSystemProvider, Disposable, FileType, FileStat, FileSystemError, FileChangeType, FileChangeEvent, FileSearchQuery, FileSearchOptions, CancellationToken, ProviderResult, FileSearchProvider } from 'vscode';
 import { Utils } from 'vscode-uri';
+import { Minimatch } from 'minimatch';
 
 export interface File {
 	readonly type: FileType.File;
@@ -31,9 +32,8 @@ function modifiedFileStat(stats: FileStat, size?: number): Promise<FileStat> {
 	return Promise.resolve({ type: stats.type, ctime: stats.ctime, mtime: Date.now(), size: size ?? stats.size });
 }
 
-export class MemFileSystemProvider implements FileSystemProvider {
-
-	constructor(private readonly scheme: string, private readonly root: Directory) {
+export class MemFileSystemProvider implements FileSystemProvider, FileSearchProvider {
+	constructor(private readonly scheme: string, private readonly root: Directory, private readonly rootUri: Uri) {
 	}
 
 	// --- manage file metadata
@@ -135,6 +135,40 @@ export class MemFileSystemProvider implements FileSystemProvider {
 		const stats = await parent.stats;
 		parent.stats = modifiedFileStat(stats, stats.size + 1);
 		this._fireSoon({ type: FileChangeType.Changed, uri: dirname }, { type: FileChangeType.Created, uri });
+	}
+
+	// --- search
+
+	provideFileSearchResults(query: FileSearchQuery, options: FileSearchOptions, token: CancellationToken ): ProviderResult<Uri[]> {
+		const pattern = query.pattern;
+		console.log(`vscode-test-web search query: ${JSON.stringify(query)}`);
+		const glob = new Minimatch(pattern);
+
+		// I guess traverse all the directories looking for pattern?
+		// We need to keep the parts/directory names to construct a usable URI
+		const result: Uri[] = [];
+		const dive = async (currentDirectory: Directory, pathSegments: string[] = []) => {
+			for (const [name, entry] of await currentDirectory.entries) {
+				if (typeof options.maxResults !== 'undefined' && result.length >= options.maxResults) {
+					break;
+				}
+
+				const uri = Uri.joinPath(this.rootUri, ...pathSegments, entry.name);
+				if (entry.type === FileType.File) {
+					const toMatch = uri.toString();
+					// TODO: Unsure if no pattern is a bug somewhere, or if that's indicative of "match everything"?
+					if (!pattern || glob.match(toMatch)) {
+						result.push(uri);
+					}
+				} else if (entry.type === FileType.Directory) {
+					await dive(entry, [...pathSegments, name]);
+				}
+			}
+		};
+
+		return dive(this.root).then(() => {
+			return result;
+		});
 	}
 
 	// --- lookup

@@ -1,48 +1,55 @@
 {
-	"name": "vscode-test-web-fs",
-	"private": true,
-	"displayName": "vscode-test-web file system provider",
-	"description": "Provides a file provider for web tests to access local files and folders.",
-	"publisher": "vscode",
-	"version": "0.0.1",
-	"license": "MIT",
-	"engines": {
-		"vscode": "^1.72.0"
-	},
-	"categories": [
-		"Other"
-	],
-	"activationEvents": [
-		"onFileSystem:vscode-test-web"
-	],
-	"contributes": {
-		"resourceLabelFormatters": [
-			{
-				"authority": "mount",
-				"scheme": "vscode-test-web",
-				"formatting": {
-					"workspaceSuffix": "Test Files",
-					"label": "${path}"
-				}
-			}
-		]
-	},
-	"browser": "./dist/fsExtensionMain.js",
-	"scripts": {
-		"vscode:prepublish": "npm run package-web",
-		"compile-web": "webpack",
-		"watch-web": "webpack --watch",
-		"package-web": "webpack --mode production --devtool hidden-source-map"
-	},
-	"devDependencies": {
-		"@types/vscode": "^1.81.0",
-		"@types/webpack-env": "^1.18.3",
-		"ts-loader": "^9.5.0",
-		"webpack": "^5.89.0",
-		"webpack-cli": "^5.1.4",
-		"process": "^0.11.10",
-		"path-browserify": "^1.0.1",
-		"request-light": "^0.7.0",
-		"vscode-uri": "^3.0.8"
-	}
+  "name": "vscode-test-web-fs",
+  "private": true,
+  "displayName": "vscode-test-web file system provider",
+  "description": "Provides a file provider for web tests to access local files and folders.",
+  "publisher": "vscode",
+  "version": "0.0.1",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.72.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onFileSystem:vscode-test-web",
+    "onSearch:vscode-test-web"
+  ],
+  "enabledApiProposals": [
+    "fileSearchProvider"
+  ],
+  "contributes": {
+    "resourceLabelFormatters": [
+      {
+        "authority": "mount",
+        "scheme": "vscode-test-web",
+        "formatting": {
+          "workspaceSuffix": "Test Files",
+          "label": "${path}"
+        }
+      }
+    ]
+  },
+  "browser": "./dist/fsExtensionMain.js",
+  "scripts": {
+    "vscode:prepublish": "npm run package-web",
+    "compile-web": "webpack",
+    "watch-web": "webpack --watch",
+    "package-web": "webpack --mode production --devtool hidden-source-map"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.81.0",
+    "@types/webpack-env": "^1.18.3",
+    "path-browserify": "^1.0.1",
+    "process": "^0.11.10",
+    "request-light": "^0.7.0",
+    "ts-loader": "^9.5.0",
+    "vscode-uri": "^3.0.8",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "minimatch": "^9.0.3"
+  }
 }

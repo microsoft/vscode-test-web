@@ -13,8 +13,12 @@ export function activate(context: ExtensionContext) {
 	const serverUri = context.extensionUri.with({ path: '/static/mount', query: undefined });
 	const serverBackedRootDirectory = new ServerBackedDirectory(serverUri, [], '');
 
-	const disposable = workspace.registerFileSystemProvider(SCHEME, new MemFileSystemProvider(SCHEME, serverBackedRootDirectory));
+	const memFsProvider = new MemFileSystemProvider(SCHEME, serverBackedRootDirectory, serverUri);
+	const disposable = workspace.registerFileSystemProvider(SCHEME, memFsProvider);
 	context.subscriptions.push(disposable);
+
+	const searchDisposable = workspace.registerFileSearchProvider(SCHEME, memFsProvider);
+	context.subscriptions.push(searchDisposable);
 
 	console.log(`vscode-test-web-support fs provider registers for ${SCHEME}, initial content from ${serverUri.toString(/*skipEncoding*/ true)}`);
 }
