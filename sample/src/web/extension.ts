@@ -21,6 +21,28 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	context.subscriptions.push(disposable);
+
+	let findFilesDisposable = vscode.commands.registerCommand('vscode-test-web-sample.findFiles', () => {
+		vscode.window.showInputBox({ title: 'Enter a pattern', placeHolder: '**/*.md' })
+			.then((pattern) => {
+				if (!pattern) {
+					return;
+				}
+				return vscode.workspace.findFiles(pattern);
+			})
+			.then((results) => {
+				if (!results) {
+					return vscode.window.showErrorMessage('Find files returned undefined');
+				}
+				let summary = `Found:
+				${results.map((uri) => `  - ${uri.path}
+`)}`;
+				return vscode.window.showInformationMessage(summary);
+			});
+	});
+
+	context.subscriptions.push(findFilesDisposable);
+
 }
 
 // this method is called when your extension is deactivated
