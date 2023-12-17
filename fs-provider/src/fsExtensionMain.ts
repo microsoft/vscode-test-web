@@ -13,7 +13,7 @@ export function activate(context: ExtensionContext) {
 	const serverUri = context.extensionUri.with({ path: '/static/mount', query: undefined });
 	const serverBackedRootDirectory = new ServerBackedDirectory(serverUri, [], '');
 
-	const memFsProvider = new MemFileSystemProvider(SCHEME, serverBackedRootDirectory, serverUri);
+	const memFsProvider = new MemFileSystemProvider(SCHEME, serverBackedRootDirectory, context.extensionUri);
 	const disposable = workspace.registerFileSystemProvider(SCHEME, memFsProvider);
 	context.subscriptions.push(disposable);
 

@@ -33,7 +33,7 @@ function modifiedFileStat(stats: FileStat, size?: number): Promise<FileStat> {
 }
 
 export class MemFileSystemProvider implements FileSystemProvider, FileSearchProvider {
-	constructor(private readonly scheme: string, private readonly root: Directory, private readonly rootUri: Uri) {
+	constructor(private readonly scheme: string, private readonly root: Directory, private readonly extensionUri: Uri) {
 	}
 
 	// --- manage file metadata
@@ -141,11 +141,10 @@ export class MemFileSystemProvider implements FileSystemProvider, FileSearchProv
 
 	provideFileSearchResults(query: FileSearchQuery, options: FileSearchOptions, token: CancellationToken ): ProviderResult<Uri[]> {
 		const pattern = query.pattern;
+		// Pattern is always blank: https://github.com/microsoft/vscode/issues/200892
 		console.log(`vscode-test-web search query: ${JSON.stringify(query)}`);
 		const glob = new Minimatch(pattern);
 
-		// I guess traverse all the directories looking for pattern?
-		// We need to keep the parts/directory names to construct a usable URI
 		const result: Uri[] = [];
 		const dive = async (currentDirectory: Directory, pathSegments: string[] = []) => {
 			for (const [name, entry] of await currentDirectory.entries) {
@@ -153,10 +152,10 @@ export class MemFileSystemProvider implements FileSystemProvider, FileSearchProv
 					break;
 				}
 
-				const uri = Uri.joinPath(this.rootUri, ...pathSegments, entry.name);
+				const uri = Uri.joinPath(this.extensionUri, ...pathSegments, entry.name);
 				if (entry.type === FileType.File) {
 					const toMatch = uri.toString();
-					// TODO: Unsure if no pattern is a bug somewhere, or if that's indicative of "match everything"?
+					// Pattern is always blank: https://github.com/microsoft/vscode/issues/200892
 					if (!pattern || glob.match(toMatch)) {
 						result.push(uri);
 					}
