@@ -139,11 +139,10 @@ export class MemFileSystemProvider implements FileSystemProvider, FileSearchProv
 
 	// --- search
 
-	provideFileSearchResults(query: FileSearchQuery, options: FileSearchOptions, token: CancellationToken ): ProviderResult<Uri[]> {
+	async provideFileSearchResults(query: FileSearchQuery, options: FileSearchOptions, token: CancellationToken): Promise<Uri[]> {
 		const pattern = query.pattern;
 		// Pattern is always blank: https://github.com/microsoft/vscode/issues/200892
-		console.log(`vscode-test-web search query: ${JSON.stringify(query)}`);
-		const glob = new Minimatch(pattern);
+		const glob = pattern ? new Minimatch(pattern) : undefined;
 
 		const result: Uri[] = [];
 		const dive = async (currentDirectory: Directory, pathSegments: string[] = []) => {
@@ -156,7 +155,7 @@ export class MemFileSystemProvider implements FileSystemProvider, FileSearchProv
 				if (entry.type === FileType.File) {
 					const toMatch = uri.toString();
 					// Pattern is always blank: https://github.com/microsoft/vscode/issues/200892
-					if (!pattern || glob.match(toMatch)) {
+					if (!glob || glob.match(toMatch)) {
 						result.push(uri);
 					}
 				} else if (entry.type === FileType.Directory) {
@@ -165,9 +164,8 @@ export class MemFileSystemProvider implements FileSystemProvider, FileSearchProv
 			}
 		};
 
-		return dive(this.root).then(() => {
-			return result;
-		});
+		await dive(this.root);
+		return result;
 	}
 
 	// --- lookup

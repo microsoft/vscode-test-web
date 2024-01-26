@@ -25,18 +25,13 @@ export function activate(context: vscode.ExtensionContext) {
 	let findFilesDisposable = vscode.commands.registerCommand('vscode-test-web-sample.findFiles', () => {
 		vscode.window.showInputBox({ title: 'Enter a pattern', placeHolder: '**/*.md' })
 			.then((pattern) => {
-				if (!pattern) {
-					return;
-				}
-				return vscode.workspace.findFiles(pattern);
+				return pattern ? vscode.workspace.findFiles(pattern) : undefined;
 			})
 			.then((results) => {
 				if (!results) {
 					return vscode.window.showErrorMessage('Find files returned undefined');
 				}
-				let summary = `Found:
-				${results.map((uri) => `  - ${uri.path}
-`)}`;
+				let summary = `Found:\n${results.map(uri => `  - ${uri.path}`).join('\n')}`;
 				return vscode.window.showInformationMessage(summary);
 			});
 	});
