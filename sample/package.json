@@ -19,6 +19,10 @@
 			{
 				"command": "vscode-test-web-sample.helloWorld",
 				"title": "Hello World"
+			},
+			{
+				"command": "vscode-test-web-sample.findFiles",
+				"title": "Find files"
 			}
 		]
 	},

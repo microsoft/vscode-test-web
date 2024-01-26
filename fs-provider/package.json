@@ -13,7 +13,11 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onFileSystem:vscode-test-web"
+		"onFileSystem:vscode-test-web",
+		"onSearch:vscode-test-web"
+	],
+	"enabledApiProposals": [
+		"fileSearchProvider"
 	],
 	"contributes": {
 		"resourceLabelFormatters": [
