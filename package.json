@@ -1,6 +1,6 @@
 {
   "name": "@vscode/test-web",
-  "version": "0.0.52",
+  "version": "0.0.53",
   "scripts": {
     "install-extensions": "npm i --prefix=fs-provider && npm i --prefix=sample",
     "compile": "tsc -p ./ && npm run compile-fs-provider",
@@ -25,13 +25,13 @@
   "dependencies": {
     "@koa/router": "^12.0.1",
     "@koa/cors": "^5.0.0",
-    "koa": "^2.15.0",
+    "koa": "^2.15.2",
     "koa-morgan": "^1.0.1",
     "koa-mount": "^4.0.0",
     "koa-static": "^5.0.0",
     "minimist": "^1.2.8",
-    "playwright": "^1.41.2",
-    "@playwright/browser-chromium": "^1.41.2",
+    "playwright": "^1.42.1",
+    "@playwright/browser-chromium": "^1.42.1",
     "vscode-uri": "^3.0.8",
     "http-proxy-agent": "^7.0.2",
     "https-proxy-agent": "^7.0.4",
@@ -39,7 +39,7 @@
     "gunzip-maybe": "^1.4.2"
   },
   "devDependencies": {
-    "@types/koa": "^2.14.0",
+    "@types/koa": "^2.15.0",
     "@types/koa-morgan": "^1.0.8",
     "@types/koa-mount": "^4.0.5",
     "@types/koa-static": "^4.0.4",
@@ -48,9 +48,9 @@
     "@types/node": "^20.10.1",
     "@types/gunzip-maybe": "^1.4.2",
     "@types/tar-fs": "^2.0.4",
-    "@typescript-eslint/eslint-plugin": "^7.0.2",
-    "@typescript-eslint/parser": "^7.0.2",
-    "eslint": "^8.56.0",
+    "@typescript-eslint/eslint-plugin": "^7.4.0",
+    "@typescript-eslint/parser": "^7.4.0",
+    "eslint": "^8.57.0",
     "eslint-plugin-header": "^3.1.1",
     "typescript": "^5.3.3"
   },
