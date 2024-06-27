@@ -62,7 +62,8 @@ class Workbench {
 		if (this.dev) {
 			return `<script> require(['vs/code/browser/workbench/workbench'], function() {}); </script>`;
 		}
-		return `<script src="${this.baseUrl}/out/vs/workbench/workbench.web.main.nls.js"></script>`
+		return `<script src="${this.baseUrl}/out/nls.messages.js"></script>`
+			+ `<script src="${this.baseUrl}/out/vs/workbench/workbench.web.main.nls.js"></script>`
 			+ `<script src="${this.baseUrl}/out/vs/workbench/workbench.web.main.js"></script>`
 			+ `<script src="${this.baseUrl}/out/vs/code/browser/workbench/workbench.js"></script>`;
 	}
