@@ -35,14 +35,14 @@
 		"package-web": "webpack --mode production --devtool hidden-source-map"
 	},
 	"devDependencies": {
-		"@types/vscode": "^1.81.0",
-		"@types/mocha": "10.0.6",
-		"mocha": "^10.4.0",
+		"@types/vscode": "^1.90.0",
+		"@types/mocha": "10.0.7",
+		"mocha": "^10.5.2",
 		"typescript": "^5.4.5",
 		"ts-loader": "^9.5.1",
-		"webpack": "^5.91.0",
+		"webpack": "^5.92.1",
 		"webpack-cli": "^5.1.4",
-		"@types/webpack-env": "^1.18.4",
+		"@types/webpack-env": "^1.18.5",
 		"assert": "^2.1.0",
 		"process": "^0.11.10"
 	}

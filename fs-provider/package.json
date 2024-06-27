@@ -39,10 +39,10 @@
 		"package-web": "webpack --mode production --devtool hidden-source-map"
 	},
 	"devDependencies": {
-		"@types/vscode": "^1.81.0",
-		"minimatch": "9.0.4",
+		"@types/vscode": "^1.90.0",
+		"minimatch": "9.0.5",
 		"ts-loader": "^9.5.1",
-		"webpack": "^5.91.0",
+		"webpack": "^5.92.1",
 		"webpack-cli": "^5.1.4",
 		"process": "^0.11.10",
 		"path-browserify": "^1.0.1",
