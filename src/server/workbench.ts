@@ -33,7 +33,7 @@ function asJSON(value: unknown): string {
 }
 
 class Workbench {
-	constructor(readonly baseUrl: string, readonly dev: boolean, readonly esm: boolean, private readonly builtInExtensions: IScannedBuiltinExtension[] = [], private readonly productOverrides?: Record<string, any>) { }
+	constructor(readonly baseUrl: string, readonly dev: boolean, readonly esm: boolean, private devCSSModules: string[], private readonly builtInExtensions: IScannedBuiltinExtension[] = [], private readonly productOverrides?: Record<string, any>) { }
 
 	async render(workbenchWebConfiguration: IWorkbenchOptions): Promise<string> {
 		if (this.productOverrides) {
@@ -45,6 +45,7 @@ class Workbench {
 			WORKBENCH_WEB_BASE_URL: this.baseUrl,
 			WORKBENCH_BUILTIN_EXTENSIONS: asJSON(this.builtInExtensions),
 			WORKBENCH_MAIN: this.getMain(),
+			WORKBENCH_DEV_CSS_MODULES: JSON.stringify(this.devCSSModules)
 		};
 
 		try {
@@ -136,19 +137,20 @@ export default function (config: IConfig): Router.Middleware {
 		if (config.build.type === 'sources') {
 			const builtInExtensions = await getScannedBuiltinExtensions(config.build.location);
 			const productOverrides = await getProductOverrides(config.build.location);
-			ctx.state.workbench = new Workbench(`${ctx.protocol}://${ctx.host}/static/sources`, true, config.esm, builtInExtensions, {
+			const devCSSModules = config.esm ? await getDevCssModules(config.build.location) : [];
+			ctx.state.workbench = new Workbench(`${ctx.protocol}://${ctx.host}/static/sources`, true, config.esm, devCSSModules, builtInExtensions, {
 				...productOverrides,
 				webEndpointUrlTemplate: `${ctx.protocol}://{{uuid}}.${ctx.host}/static/sources`,
 				webviewContentExternalBaseUrlTemplate: `${ctx.protocol}://{{uuid}}.${ctx.host}/static/sources/out/vs/workbench/contrib/webview/browser/pre/`
 			});
 		} else if (config.build.type === 'static') {
 			const baseUrl = `${ctx.protocol}://${ctx.host}/static/build`;
-			ctx.state.workbench = new Workbench(baseUrl, false, config.esm, [], {
+			ctx.state.workbench = new Workbench(baseUrl, false, config.esm, [], [], {
 				webEndpointUrlTemplate: `${ctx.protocol}://{{uuid}}.${ctx.host}/static/build`,
 				webviewContentExternalBaseUrlTemplate: `${ctx.protocol}://{{uuid}}.${ctx.host}/static/build/out/vs/workbench/contrib/webview/browser/pre/`
 			});
 		} else if (config.build.type === 'cdn') {
-			ctx.state.workbench = new Workbench(config.build.uri, false, config.esm);
+			ctx.state.workbench = new Workbench(config.build.uri, false, config.esm, []);
 		}
 		await next();
 	});
@@ -175,4 +177,9 @@ async function getProductOverrides(vsCodeDevLocation: string): Promise<Record<st
 	} catch (e) {
 		return undefined;
 	}
+}
+
+async function getDevCssModules(vsCodeDevLocation: string): Promise<string[]> {
+	const glob = await import('glob')
+	return glob.glob('**/*.css', { cwd: path.join(vsCodeDevLocation, 'out') });
 }
