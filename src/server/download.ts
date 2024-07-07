@@ -20,7 +20,9 @@ interface DownloadInfo {
 }
 
 async function getLatestVersion(quality: 'stable' | 'insider'): Promise<DownloadInfo> {
-	const update: DownloadInfo = await fetchJSON(`https://update.code.visualstudio.com/api/update/web-standalone/${quality}/latest`);
+	// TODO: Remove this once NLS is fixed
+	const qualityOverrideToStable = quality === 'insider' ? 'stable' : quality;
+	const update: DownloadInfo = await fetchJSON(`https://update.code.visualstudio.com/api/update/web-standalone/${qualityOverrideToStable}/latest`);
 	return update;
 }
 
