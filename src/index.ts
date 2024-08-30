@@ -582,7 +582,8 @@ async function cliMain(): Promise<void> {
 		console.error('uncaughtException', e);
 	});
 
-	// eslint-disable-next-line @typescript-eslint/no-var-requires
+	/* eslint-disable @typescript-eslint/no-var-requires */
+	/* eslint-disable @typescript-eslint/no-require-imports */
 	const manifest = require('../package.json');
 	console.log(`${manifest.name}: ${manifest.version}`);
 
