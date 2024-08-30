@@ -42,7 +42,9 @@ suite('Workspace search', () => {
 		assert.deepStrictEqual(foundFiles, expectedFiles);
 	}
 
-	test('Find files', async () => {
+	// commented out because of https://github.com/microsoft/vscode/issues/227248
+	test.skip('Find files', async () => {
+		debugger;
 		await assertEntries('/folder', ['x.txt'], ['.bar']);
 		await assertEntries('/folder/', ['x.txt'], ['.bar']);
 		await assertEntries('/', ['hello.txt', 'world.txt'], ['folder', 'folder_with_utf_8_🧿']);
