@@ -17,7 +17,8 @@
 		"onSearch:vscode-test-web"
 	],
 	"enabledApiProposals": [
-		"fileSearchProvider"
+		"fileSearchProvider",
+		"textSearchProvider"
 	],
 	"contributes": {
 		"resourceLabelFormatters": [

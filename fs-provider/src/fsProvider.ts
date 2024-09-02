@@ -141,17 +141,21 @@ export class MemFileSystemProvider implements FileSystemProvider, FileSearchProv
 
 	async provideFileSearchResults(query: FileSearchQuery, options: FileSearchOptions, token: CancellationToken): Promise<Uri[]> {
 		const pattern = query.pattern;
+
 		// Pattern is always blank: https://github.com/microsoft/vscode/issues/200892
 		const glob = pattern ? new Minimatch(pattern) : undefined;
 
 		const result: Uri[] = [];
-		const dive = async (currentDirectory: Directory, pathSegments: string[] = []) => {
-			for (const [name, entry] of await currentDirectory.entries) {
+		const dive = async (folderUri: Uri) => {
+			const directory = await this._lookupAsDirectory(folderUri, false);
+			for (const [name, entry] of await directory.entries) {
+				/* support options.includes && options.excludes */
+
 				if (typeof options.maxResults !== 'undefined' && result.length >= options.maxResults) {
 					break;
 				}
 
-				const uri = Uri.joinPath(this.extensionUri, ...pathSegments, entry.name);
+				const uri = Uri.joinPath(folderUri, entry.name);
 				if (entry.type === FileType.File) {
 					const toMatch = uri.toString();
 					// Pattern is always blank: https://github.com/microsoft/vscode/issues/200892
@@ -159,12 +163,12 @@ export class MemFileSystemProvider implements FileSystemProvider, FileSearchProv
 						result.push(uri);
 					}
 				} else if (entry.type === FileType.Directory) {
-					await dive(entry, [...pathSegments, name]);
+					await dive(uri);
 				}
 			}
 		};
 
-		await dive(this.root);
+		await dive(options.folder);
 		return result;
 	}
 

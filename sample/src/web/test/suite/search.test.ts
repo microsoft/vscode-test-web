@@ -43,7 +43,7 @@ suite('Workspace search', () => {
 	}
 
 	// commented out because of https://github.com/microsoft/vscode/issues/227248
-	test.skip('Find files', async () => {
+	test('Find files', async () => {
 		debugger;
 		await assertEntries('/folder', ['x.txt'], ['.bar']);
 		await assertEntries('/folder/', ['x.txt'], ['.bar']);
