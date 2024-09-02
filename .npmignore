@@ -1,7 +1,7 @@
 .vscode
 .npmignore
 .editorconfig
-.eslintrc.js
+.eslint.config.js
 .prettierrc
 .github/
 build/

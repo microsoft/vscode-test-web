@@ -137,8 +137,10 @@ export default function (config: IConfig): Router.Middleware {
 		if (config.build.type === 'sources') {
 			const builtInExtensions = await getScannedBuiltinExtensions(config.build.location);
 			const productOverrides = await getProductOverrides(config.build.location);
+			const esm = config.esm || await isESM(config.build.location);
+			console.log('Using ESM loader:', esm);
 			const devCSSModules = config.esm ? await getDevCssModules(config.build.location) : [];
-			ctx.state.workbench = new Workbench(`${ctx.protocol}://${ctx.host}/static/sources`, true, config.esm, devCSSModules, builtInExtensions, {
+			ctx.state.workbench = new Workbench(`${ctx.protocol}://${ctx.host}/static/sources`, true, esm, devCSSModules, builtInExtensions, {
 				...productOverrides,
 				webEndpointUrlTemplate: `${ctx.protocol}://{{uuid}}.${ctx.host}/static/sources`,
 				webviewContentExternalBaseUrlTemplate: `${ctx.protocol}://{{uuid}}.${ctx.host}/static/sources/out/vs/workbench/contrib/webview/browser/pre/`
@@ -182,4 +184,13 @@ async function getProductOverrides(vsCodeDevLocation: string): Promise<Record<st
 async function getDevCssModules(vsCodeDevLocation: string): Promise<string[]> {
 	const glob = await import('glob')
 	return glob.glob('**/*.css', { cwd: path.join(vsCodeDevLocation, 'out') });
+}
+
+async function isESM(vsCodeDevLocation: string): Promise<boolean> {
+	try {
+		const packageJSON = await fs.readFile(path.join(vsCodeDevLocation, 'out', 'package.json'));
+		return JSON.parse(packageJSON.toString()).type === 'module';
+	} catch (e) {
+		return false;
+	}
 }
