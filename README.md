@@ -80,6 +80,7 @@ CLI options:
 | --extensionDevelopmentPath | A path pointing to an extension under development to include. |
 | --extensionTestsPath | A path to a test module to run. |
 | --quality | `insiders` (default),  or `stable`. Ignored when sourcesPath is provided. |
+| --commit | commitHash The servion of the server to use. Defaults to latest build version of the given quality. Ignored when sourcesPath is provided. |
 | --sourcesPath | If set, runs the server from VS Code sources located at the given path. Make sure the sources and extensions are compiled (`yarn compile` and `yarn compile-web`). |
 | --headless | If set, hides the browser. Defaults to true when an extensionTestsPath is provided, otherwise false. |
 | --permission | Permission granted to the opened browser: e.g. `clipboard-read`, `clipboard-write`.  See [full list of options](https://playwright.dev/docs/api/class-browsercontext#browser-context-grant-permissions). Argument can be provided multiple times. |
