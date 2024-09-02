@@ -61,6 +61,13 @@ export interface Options {
 	quality?: VSCodeQuality;
 
 	/**
+	 * The commit of the VS Code build to use. If not set, the latest build is used.
+	 *
+	 * The setting is ignored when a vsCodeDevPath is provided.
+	 */
+	commit?: string;
+
+	/**
 	 * @deprecated. Use `quality` or `vsCodeDevPath` instead.
 	 */
 	version?: string;
@@ -230,8 +237,9 @@ async function getBuild(options: Options): Promise<Static | Sources> {
 		};
 	}
 	const quality = options.quality || options.version;
+	const commit = options.commit;
 	const testRunnerDataDir = options.testRunnerDataDir ?? path.resolve(process.cwd(), '.vscode-test-web');
-	return await downloadAndUnzipVSCode(quality === 'stable' ? 'stable' : 'insider', testRunnerDataDir);
+	return await downloadAndUnzipVSCode(testRunnerDataDir, quality === 'stable' ? 'stable' : 'insider', commit);
 }
 
 export async function open(options: Options): Promise<Disposable> {
@@ -514,6 +522,21 @@ function validateQuality(quality: unknown, version: unknown, vsCodeDevPath: stri
 	process.exit(-1);
 }
 
+function validateCommit(commit: unknown, vsCodeDevPath: string | undefined): string | undefined {
+
+	if (vsCodeDevPath && commit) {
+		console.log(`Sources folder is provided as input, commit is ignored.`);
+		return undefined;
+	}
+	if (commit === undefined || (typeof commit === 'string' && commit.match(/^[0-9a-f]{40}$/))) {
+		return commit;
+	} else {
+		console.log(`Invalid format for commit. Expected a 40 character long SHA1 hash.`);
+	}
+	showHelp();
+	process.exit(-1);
+}
+
 function validatePortNumber(port: unknown): number | undefined {
 	if (typeof port === 'string') {
 		const number = Number.parseInt(port);
@@ -531,6 +554,7 @@ interface CommandLineOptions {
 	extensionDevelopmentPath?: string;
 	extensionTestsPath?: string;
 	quality?: string;
+	commit?: string;
 	sourcesPath?: string;
 	'open-devtools'?: boolean;
 	headless?: boolean;
@@ -556,6 +580,7 @@ function showHelp() {
 	console.log(`  --extensionDevelopmentPath path: A path pointing to an extension under development to include. [Optional]`);
 	console.log(`  --extensionTestsPath path: A path to a test module to run. [Optional]`);
 	console.log(`  --quality 'insiders' | 'stable' [Optional, default 'insiders', ignored when running from sources]`);
+	console.log(`  --commit commitHash [Optional, defaults to latest build version of the given quality, ignored when running from sources]`);
 	console.log(`  --sourcesPath path: If provided, running from VS Code sources at the given location. [Optional]`);
 	console.log(`  --open-devtools: If set, opens the dev tools. [Optional]`);
 	console.log(`  --headless: Whether to hide the browser. Defaults to true when an extensionTestsPath is provided, otherwise false. [Optional]`);
@@ -588,7 +613,7 @@ async function cliMain(): Promise<void> {
 	console.log(`${manifest.name}: ${manifest.version}`);
 
 	const options: minimist.Opts = {
-		string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browser', 'browserOption', 'browserType', 'quality', 'version', 'waitForDebugger', 'folder-uri', 'permission', 'extensionPath', 'extensionId', 'sourcesPath', 'host', 'port', 'testRunnerDataDir'],
+		string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browser', 'browserOption', 'browserType', 'quality', 'version', 'commit', 'waitForDebugger', 'folder-uri', 'permission', 'extensionPath', 'extensionId', 'sourcesPath', 'host', 'port', 'testRunnerDataDir'],
 		boolean: ['open-devtools', 'headless', 'hideServerLog', 'printServerLog', 'help', 'verbose', 'coi', 'esm'],
 		unknown: arg => {
 			if (arg.startsWith('-')) {
@@ -613,6 +638,7 @@ async function cliMain(): Promise<void> {
 	const extensionIds = await validateExtensionIds(args.extensionId);
 	const vsCodeDevPath = await validatePathOrUndefined(args, 'sourcesPath');
 	const quality = validateQuality(args.quality, args.version, vsCodeDevPath);
+	const commit = validateCommit(args.commit, vsCodeDevPath);
 	const devTools = validateBooleanOrUndefined(args, 'open-devtools');
 	const headless = validateBooleanOrUndefined(args, 'headless');
 	const permissions = validatePermissions(args.permission);
@@ -648,6 +674,7 @@ async function cliMain(): Promise<void> {
 			browserOptions,
 			browserType,
 			quality,
+			commit,
 			devTools,
 			waitForDebugger,
 			folderUri,
@@ -674,6 +701,7 @@ async function cliMain(): Promise<void> {
 			browserOptions,
 			browserType,
 			quality,
+			commit,
 			devTools,
 			waitForDebugger,
 			folderUri,

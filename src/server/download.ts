@@ -19,9 +19,15 @@ interface DownloadInfo {
 	version: string;
 }
 
-async function getLatestVersion(quality: 'stable' | 'insider'): Promise<DownloadInfo> {
-	const update: DownloadInfo = await fetchJSON(`https://update.code.visualstudio.com/api/update/web-standalone/${quality}/latest`);
-	return update;
+async function getDownloadInfo(quality: 'stable' | 'insider', commit: string | undefined): Promise<DownloadInfo> {
+	if (commit) {
+		const url = await getRedirect(`https://update.code.visualstudio.com/commit:${commit}/web-standalone/${quality}`);
+		if (!url) {
+			throw new Error('Failed to download URL for commit ' + commit + '. Is it valid?');
+		}
+		return { url, version: commit };
+	}
+	return await fetchJSON(`https://update.code.visualstudio.com/api/update/web-standalone/${quality}/latest`);
 }
 
 const reset = '\x1b[G\x1b[0K';
@@ -72,8 +78,9 @@ async function downloadAndUntar(downloadUrl: string, destination: string, messag
 	});
 }
 
-export async function downloadAndUnzipVSCode(quality: 'stable' | 'insider', vscodeTestDir: string): Promise<Static> {
-	const info = await getLatestVersion(quality);
+
+export async function downloadAndUnzipVSCode(vscodeTestDir: string, quality: 'stable' | 'insider', commit: string | undefined): Promise<Static> {
+	const info = await getDownloadInfo(quality, commit);
 
 	const folderName = `vscode-web-${quality}-${info.version}`;
 
@@ -95,7 +102,7 @@ export async function downloadAndUnzipVSCode(quality: 'stable' | 'insider', vsco
 		await fs.writeFile(path.join(downloadedPath, 'version'), folderName);
 	} catch (err) {
 		console.error(err);
-		throw Error(`Failed to download and unpack ${productName}`);
+		throw Error(`Failed to download and unpack ${productName}.${commit ? ' Did you specify a valid commit?' : ''}`);
 	}
 	return { type: 'static', location: downloadedPath, quality, version: info.version };
 }
@@ -121,6 +128,19 @@ export async function fetch(api: string): Promise<string> {
 			res.on('error', err => {
 				reject(err);
 			});
+		});
+	});
+}
+export async function getRedirect(api: string): Promise<string | undefined> {
+	return new Promise((resolve, reject) => {
+		const httpLibrary = api.startsWith('https') ? https : http;
+		httpLibrary.get(api, { method: 'HEAD', ...getAgent(api) }, res => {
+			console.log(res.statusCode, res.headers.location);
+			if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307) {
+				resolve(res.headers.location);
+			} else {
+				resolve(undefined);
+			}
 		});
 	});
 }
