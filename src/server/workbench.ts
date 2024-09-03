@@ -44,8 +44,7 @@ class Workbench {
 			WORKBENCH_AUTH_SESSION: '',
 			WORKBENCH_WEB_BASE_URL: this.baseUrl,
 			WORKBENCH_BUILTIN_EXTENSIONS: asJSON(this.builtInExtensions),
-			WORKBENCH_MAIN: this.getMain(),
-			WORKBENCH_DEV_CSS_MODULES: JSON.stringify(this.devCSSModules)
+			WORKBENCH_MAIN: this.getMain()
 		};
 
 		try {
@@ -58,7 +57,30 @@ class Workbench {
 
 	getMain() {
 		if (this.esm) {
-			return `<script type="module" src="${this.baseUrl}/out/vs/code/browser/workbench/workbench.js"></script>`;
+			const lines = this.devCSSModules.length > 0 ? [
+				"<script>",
+				`globalThis._VSCODE_CSS_MODULES = ${JSON.stringify(this.devCSSModules)};`,
+				"</script>",
+				"<script>",
+				"const sheet = document.getElementById('vscode-css-modules').sheet;",
+				"globalThis._VSCODE_CSS_LOAD = function (url) { sheet.insertRule(`@import url(${url});`); };",
+				"",
+				"const importMap = { imports: {} };",
+				"for (const cssModule of globalThis._VSCODE_CSS_MODULES) {",
+				"  const cssUrl = new URL(cssModule, globalThis._VSCODE_FILE_ROOT).href;",
+				"  const jsSrc = `globalThis._VSCODE_CSS_LOAD('${cssUrl}');\\n`;",
+				"  const blob = new Blob([jsSrc], { type: 'application/javascript' });",
+				"  importMap.imports[cssUrl] = URL.createObjectURL(blob);",
+				"}",
+				"const importMapElement = document.createElement('script');",
+				"importMapElement.type = 'importmap';",
+				"importMapElement.setAttribute('nonce', '1nline-m4p');",
+				"importMapElement.textContent = JSON.stringify(importMap, undefined, 2);",
+				"document.head.appendChild(importMapElement);",
+				"</script>"
+			] : [];
+			lines.push(`<script type="module" src="${this.baseUrl}/out/vs/code/browser/workbench/workbench.js"></script>`);
+			return lines.join('\n');
 		}
 		if (this.dev) {
 			return `<script> require(['vs/code/browser/workbench/workbench'], function() {}); </script>`;
@@ -139,7 +161,7 @@ export default function (config: IConfig): Router.Middleware {
 			const productOverrides = await getProductOverrides(config.build.location);
 			const esm = config.esm || await isESM(config.build.location);
 			console.log('Using ESM loader:', esm);
-			const devCSSModules = config.esm ? await getDevCssModules(config.build.location) : [];
+			const devCSSModules = esm ? await getDevCssModules(config.build.location) : [];
 			ctx.state.workbench = new Workbench(`${ctx.protocol}://${ctx.host}/static/sources`, true, esm, devCSSModules, builtInExtensions, {
 				...productOverrides,
 				webEndpointUrlTemplate: `${ctx.protocol}://{{uuid}}.${ctx.host}/static/sources`,
