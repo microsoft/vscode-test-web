@@ -10,7 +10,6 @@ import * as Router from '@koa/router';
 
 import { GalleryExtensionInfo, IConfig } from './main';
 import { getScannedBuiltinExtensions, IScannedBuiltinExtension, scanForExtensions, URIComponents } from './extensions';
-import { fetch } from './download';
 import { fsProviderExtensionPrefix, fsProviderFolderUri } from './mounts';
 
 interface IDevelopmentOptions {
@@ -92,7 +91,7 @@ class Workbench {
 	}
 
 	async renderCallback(): Promise<string> {
-		return await fetch(`${this.baseUrl}/out/vs/code/browser/workbench/callback.html`);
+		return (await fs.readFile(path.resolve(__dirname, `../../views/callback.html`))).toString();
 	}
 }
 
