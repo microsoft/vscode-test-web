@@ -42,26 +42,6 @@
 		globalThis._VSCODE_FILE_ROOT = baseUrl + '/out/';
 	</script>
 	<script>
-		const sheet = document.getElementById('vscode-css-modules').sheet;
-		globalThis._VSCODE_CSS_LOAD = function (url) {
-			sheet.insertRule(`@import url(${url});`);
-		};
-
-		const importMap = { imports: {} };
-		const cssModules = JSON.parse('{{WORKBENCH_DEV_CSS_MODULES}}');
-		for (const cssModule of cssModules) {
-			const cssUrl = new URL(cssModule, globalThis._VSCODE_FILE_ROOT).href;
-			const jsSrc = `globalThis._VSCODE_CSS_LOAD('${cssUrl}');\n`;
-			const blob = new Blob([jsSrc], { type: 'application/javascript' });
-			importMap.imports[cssUrl] = URL.createObjectURL(blob);
-		}
-		const importMapElement = document.createElement('script');
-		importMapElement.type = 'importmap';
-		importMapElement.setAttribute('nonce', '1nline-m4p')
-		importMapElement.textContent = JSON.stringify(importMap, undefined, 2);
-		document.head.appendChild(importMapElement);
-	</script>
-	<script>
 		performance.mark('code/willLoadWorkbenchMain');
 	</script>
 	{{WORKBENCH_MAIN}}
