@@ -19,15 +19,23 @@ interface DownloadInfo {
 	version: string;
 }
 
-async function getDownloadInfo(quality: 'stable' | 'insider', commit: string | undefined): Promise<DownloadInfo> {
-	if (commit) {
-		const url = await getRedirect(`https://update.code.visualstudio.com/commit:${commit}/web-standalone/${quality}`);
-		if (!url) {
-			throw new Error('Failed to download URL for commit ' + commit + '. Is it valid?');
-		}
-		return { url, version: commit };
-	}
+async function getLatestBuild(quality: 'stable' | 'insider'): Promise<DownloadInfo> {
 	return await fetchJSON(`https://update.code.visualstudio.com/api/update/web-standalone/${quality}/latest`);
+}
+
+export async function getDownloadURL(quality: 'stable' | 'insider', commit: string): Promise<string | undefined> {
+	return new Promise((resolve, reject) => {
+		const url = `https://update.code.visualstudio.com/commit:${commit}/web-standalone/${quality}`;
+		const httpLibrary = url.startsWith('https') ? https : http;
+		httpLibrary.get(url, { method: 'HEAD', ...getAgent(url) }, res => {
+			console.log(res.statusCode, res.headers.location);
+			if ((res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307) && res.headers.location) {
+				resolve(res.headers.location);
+			} else {
+				resolve(undefined);
+			}
+		});
+	});
 }
 
 const reset = '\x1b[G\x1b[0K';
@@ -80,13 +88,24 @@ async function downloadAndUntar(downloadUrl: string, destination: string, messag
 
 
 export async function downloadAndUnzipVSCode(vscodeTestDir: string, quality: 'stable' | 'insider', commit: string | undefined): Promise<Static> {
-	const info = await getDownloadInfo(quality, commit);
+	let downloadURL: string | undefined;
+	if (!commit) {
+		const info = await getLatestBuild(quality);
+		commit = info.version;
+		downloadURL = info.url;
+	}
 
-	const folderName = `vscode-web-${quality}-${info.version}`;
-
+	const folderName = `vscode-web-${quality}-${commit}`;
 	const downloadedPath = path.resolve(vscodeTestDir, folderName);
 	if (existsSync(downloadedPath) && existsSync(path.join(downloadedPath, 'version'))) {
-		return { type: 'static', location: downloadedPath, quality, version: info.version };
+		return { type: 'static', location: downloadedPath, quality, version: commit };
+	}
+
+	if (!downloadURL) {
+		downloadURL = await getDownloadURL(quality, commit);
+		if (!downloadURL) {
+			throw Error(`Failed to find a download for ${quality} and ${commit}`);
+		}
 	}
 
 	if (existsSync(vscodeTestDir)) {
@@ -98,13 +117,13 @@ export async function downloadAndUnzipVSCode(vscodeTestDir: string, quality: 'st
 	const productName = `VS Code ${quality === 'stable' ? 'Stable' : 'Insiders'}`;
 
 	try {
-		await downloadAndUntar(info.url, downloadedPath, `Downloading ${productName}`);
+		await downloadAndUntar(downloadURL, downloadedPath, `Downloading ${productName}`);
 		await fs.writeFile(path.join(downloadedPath, 'version'), folderName);
 	} catch (err) {
 		console.error(err);
 		throw Error(`Failed to download and unpack ${productName}.${commit ? ' Did you specify a valid commit?' : ''}`);
 	}
-	return { type: 'static', location: downloadedPath, quality, version: info.version };
+	return { type: 'static', location: downloadedPath, quality, version: commit };
 }
 
 export async function fetch(api: string): Promise<string> {
@@ -131,19 +150,7 @@ export async function fetch(api: string): Promise<string> {
 		});
 	});
 }
-export async function getRedirect(api: string): Promise<string | undefined> {
-	return new Promise((resolve, reject) => {
-		const httpLibrary = api.startsWith('https') ? https : http;
-		httpLibrary.get(api, { method: 'HEAD', ...getAgent(api) }, res => {
-			console.log(res.statusCode, res.headers.location);
-			if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307) {
-				resolve(res.headers.location);
-			} else {
-				resolve(undefined);
-			}
-		});
-	});
-}
+
 
 export async function fetchJSON<T>(api: string): Promise<T> {
 	const data = await fetch(api);

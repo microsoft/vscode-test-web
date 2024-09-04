@@ -41,7 +41,6 @@ class Workbench {
 		}
 		const values: { [key: string]: string } = {
 			WORKBENCH_WEB_CONFIGURATION: asJSON(workbenchWebConfiguration),
-			WORKBENCH_AUTH_SESSION: '',
 			WORKBENCH_WEB_BASE_URL: this.baseUrl,
 			WORKBENCH_BUILTIN_EXTENSIONS: asJSON(this.builtInExtensions),
 			WORKBENCH_MAIN: await this.getMain()
