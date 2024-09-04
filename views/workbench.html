@@ -39,9 +39,13 @@
 	<script src="{{WORKBENCH_WEB_BASE_URL}}/out/vs/webPackagePaths.js"></script>
 	<script>
 		let baseUrl = '{{WORKBENCH_WEB_BASE_URL}}';
-		Object.keys(self.webPackagePaths).map(function (key, index) {
-			self.webPackagePaths[key] = `${baseUrl}/node_modules/${key}/${self.webPackagePaths[key]}`;
-		});
+		if (!self.webPackagePaths) {
+			self.webPackagePaths = {};
+		} else {
+			Object.keys(self.webPackagePaths).forEach(function (key, index) {
+				self.webPackagePaths[key] = `${baseUrl}/node_modules/${key}/${self.webPackagePaths[key]}`;
+			});
+		}
 		require.config({
 			baseUrl: `${baseUrl}/out`,
 			recordStats: true,
