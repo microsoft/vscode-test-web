@@ -2,7 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-///<amd-module name='vscode-browser-main'/>
+///<amd-module name='vscode-web-browser-main'/>
 
 import { create, IWorkspaceProvider, IWorkbenchConstructionOptions, UriComponents, IWorkspace, URI, IURLCallbackProvider, Emitter, IDisposable} from './workbench.api';
 

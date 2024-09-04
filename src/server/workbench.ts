@@ -90,9 +90,9 @@ class Workbench {
 			}
 			return lines.join('\n');
 		} else {
-			let workbenchMain = await readFileInRepo(`out/browser/amd/main.js`); // defines a AMD module `vscode-browser-main`
+			let workbenchMain = await readFileInRepo(`out/browser/amd/main.js`); // defines a AMD module `vscode-web-browser-main`
 			workbenchMain = workbenchMain.replace('./workbench.api', `vs/workbench/workbench.web.main`);
-			workbenchMain = workbenchMain + '\nrequire(["vscode-browser-main"], function() { });';
+			workbenchMain = workbenchMain + '\nrequire(["vscode-web-browser-main"], function() { });';
 			if (this.dev) {
 
 			} else {
