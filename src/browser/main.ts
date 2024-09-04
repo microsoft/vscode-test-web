@@ -124,14 +124,18 @@ class WorkspaceProvider implements IWorkspaceProvider {
 		}
 
 		if ('folderUri' in workspaceA && 'folderUri' in workspaceB) {
-			return isEqual(workspaceA.folderUri, workspaceB.folderUri); // same workspace
+			return this.isEqualURI(workspaceA.folderUri, workspaceB.folderUri); // same workspace
 		}
 
 		if ('workspaceUri' in workspaceA && 'workspaceUri' in workspaceB) {
-			return isEqual(workspaceA.workspaceUri, workspaceB.workspaceUri); // same workspace
+			return this.isEqualURI(workspaceA.workspaceUri, workspaceB.workspaceUri); // same workspace
 		}
 
 		return false;
+	}
+
+	private isEqualURI(a: UriComponents, b: UriComponents): boolean {
+		return a.scheme === b.scheme && a.authority === b.authority && a.path === b.path;
 	}
 
 }
@@ -249,10 +253,6 @@ class LocalStorageURLCallbackProvider implements IURLCallbackProvider, IDisposab
     dispose(): void {
         this._onCallback.dispose();
     }
-}
-
-function isEqual(a: UriComponents, b: UriComponents): boolean {
-    return a.scheme === b.scheme && a.authority === b.authority && a.path === b.path;
 }
 
 (function () {

@@ -35,7 +35,7 @@
 		"package-web": "webpack --mode production --devtool hidden-source-map"
 	},
 	"devDependencies": {
-		"@types/vscode": "^1.90.0",
+		"@types/vscode": "^1.92.0",
 		"@types/mocha": "10.0.7",
 		"mocha": "^10.7.3",
 		"typescript": "^5.5.4",
