@@ -1,12 +1,12 @@
 {
 	"compilerOptions": {
 		"target": "ES2022",
-		"module": "ES2022",
+		"module": "AMD",
 		"lib": [
 			"ES2022",
 			"DOM",
 		],
-		"outDir": "../../out/browser",
+		"outDir": "../../out/browser/amd",
 		"declaration": true,
 		"strict": true,
 		"noImplicitAny": false,
@@ -16,6 +16,7 @@
 		"skipLibCheck": true,
 		"forceConsistentCasingInFileNames": true,
 		"sourceMap": false,
-		"newLine": "lf"
+		"newLine": "lf",
+		"removeComments": true
 	}
 }

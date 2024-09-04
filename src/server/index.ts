@@ -6,8 +6,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IConfig, runServer, Static, Sources } from './server/main';
-import { downloadAndUnzipVSCode, directoryExists, fileExists } from './server/download';
+import { IConfig, runServer, Static, Sources } from './main';
+import { downloadAndUnzipVSCode, directoryExists, fileExists, readFileInRepo } from './download';
 
 import * as playwright from 'playwright';
 import * as minimist from 'minimist';
@@ -609,7 +609,7 @@ async function cliMain(): Promise<void> {
 
 	/* eslint-disable @typescript-eslint/no-var-requires */
 	/* eslint-disable @typescript-eslint/no-require-imports */
-	const manifest = require('../package.json');
+	const manifest = JSON.parse(await readFileInRepo('package.json'));
 	console.log(`${manifest.name}: ${manifest.version}`);
 
 	const options: minimist.Opts = {

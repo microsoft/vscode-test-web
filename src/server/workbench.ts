@@ -11,6 +11,7 @@ import * as Router from '@koa/router';
 import { GalleryExtensionInfo, IConfig } from './main';
 import { getScannedBuiltinExtensions, IScannedBuiltinExtension, scanForExtensions, URIComponents } from './extensions';
 import { fsProviderExtensionPrefix, fsProviderFolderUri } from './mounts';
+import { readFileInRepo } from './download';
 
 interface IDevelopmentOptions {
 	extensionTestsPath?: URIComponents;
@@ -43,55 +44,69 @@ class Workbench {
 			WORKBENCH_AUTH_SESSION: '',
 			WORKBENCH_WEB_BASE_URL: this.baseUrl,
 			WORKBENCH_BUILTIN_EXTENSIONS: asJSON(this.builtInExtensions),
-			WORKBENCH_MAIN: this.getMain()
+			WORKBENCH_MAIN: await this.getMain()
 		};
 
 		try {
-			const workbenchTemplate = (await fs.readFile(path.resolve(__dirname, `../../views/workbench${this.esm ? '-esm' : ''}.html`))).toString();
+			const workbenchTemplate = await readFileInRepo(`views/workbench${this.esm ? '-esm' : ''}.html`);
 			return workbenchTemplate.replace(/\{\{([^}]+)\}\}/g, (_, key) => values[key] ?? 'undefined');
 		} catch (e) {
 			return String(e);
 		}
 	}
 
-	getMain() {
+	async getMain() {
+		const lines: string[] = [];
 		if (this.esm) {
-			const lines = this.devCSSModules.length > 0 ? [
-				"<script>",
-				`globalThis._VSCODE_CSS_MODULES = ${JSON.stringify(this.devCSSModules)};`,
-				"</script>",
-				"<script>",
-				"const sheet = document.getElementById('vscode-css-modules').sheet;",
-				"globalThis._VSCODE_CSS_LOAD = function (url) { sheet.insertRule(`@import url(${url});`); };",
-				"",
-				"const importMap = { imports: {} };",
-				"for (const cssModule of globalThis._VSCODE_CSS_MODULES) {",
-				"  const cssUrl = new URL(cssModule, globalThis._VSCODE_FILE_ROOT).href;",
-				"  const jsSrc = `globalThis._VSCODE_CSS_LOAD('${cssUrl}');\\n`;",
-				"  const blob = new Blob([jsSrc], { type: 'application/javascript' });",
-				"  importMap.imports[cssUrl] = URL.createObjectURL(blob);",
-				"}",
-				"const importMapElement = document.createElement('script');",
-				"importMapElement.type = 'importmap';",
-				"importMapElement.setAttribute('nonce', '1nline-m4p');",
-				"importMapElement.textContent = JSON.stringify(importMap, undefined, 2);",
-				"document.head.appendChild(importMapElement);",
-				"</script>"
-			] : [];
-			lines.push(`<script type="module" src="${this.baseUrl}/out/vs/code/browser/workbench/workbench.js"></script>`);
+			let workbenchMain = await readFileInRepo(`out/browser/esm/main.js`);
+			if (this.dev) {
+				lines.push(
+					"<script>",
+					`globalThis._VSCODE_CSS_MODULES = ${JSON.stringify(this.devCSSModules)};`,
+					"</script>",
+					"<script>",
+					"const sheet = document.getElementById('vscode-css-modules').sheet;",
+					"globalThis._VSCODE_CSS_LOAD = function (url) { sheet.insertRule(`@import url(${url});`); };",
+					"",
+					"const importMap = { imports: {} };",
+					"for (const cssModule of globalThis._VSCODE_CSS_MODULES) {",
+					"  const cssUrl = new URL(cssModule, globalThis._VSCODE_FILE_ROOT).href;",
+					"  const jsSrc = `globalThis._VSCODE_CSS_LOAD('${cssUrl}');\\n`;",
+					"  const blob = new Blob([jsSrc], { type: 'application/javascript' });",
+					"  importMap.imports[cssUrl] = URL.createObjectURL(blob);",
+					"}",
+					"const importMapElement = document.createElement('script');",
+					"importMapElement.type = 'importmap';",
+					"importMapElement.setAttribute('nonce', '1nline-m4p');",
+					"importMapElement.textContent = JSON.stringify(importMap, undefined, 2);",
+					"document.head.appendChild(importMapElement);",
+					"</script>");
+				workbenchMain = workbenchMain.replace('./workbench.api', `${this.baseUrl}/out/vs/workbench/workbench.web.main.js`);
+				lines.push(`<script type="module">${workbenchMain}</script>`);
+			} else {
+				workbenchMain = workbenchMain.replace('./workbench.api', `${this.baseUrl}/out/vs/workbench/workbench.web.main.internal.js`);
+				lines.push(`<script src="${this.baseUrl}/out/nls.messages.js"></script>`);
+				lines.push(`<script type="module">${workbenchMain}</script>`);
+			}
 			return lines.join('\n');
+		} else {
+			let workbenchMain = await readFileInRepo(`out/browser/amd/main.js`); // defines a AMD module `vscode-browser-main`
+			workbenchMain = workbenchMain.replace('./workbench.api', `vs/workbench/workbench.web.main`);
+			workbenchMain = workbenchMain + '\nrequire(["vscode-browser-main"], function() { });';
+			if (this.dev) {
+
+			} else {
+				lines.push(`<script src="${this.baseUrl}/out/nls.messages.js"></script>`);
+				lines.push(`<script src="${this.baseUrl}/out/vs/workbench/workbench.web.main.nls.js"></script>`);
+				lines.push(`<script src="${this.baseUrl}/out/vs/workbench/workbench.web.main.js"></script>`);
+			}
+			lines.push(`<script>${workbenchMain}</script>`);
 		}
-		if (this.dev) {
-			return `<script> require(['vs/code/browser/workbench/workbench'], function() {}); </script>`;
-		}
-		return `<script src="${this.baseUrl}/out/nls.messages.js"></script>`
-			+ `<script src="${this.baseUrl}/out/vs/workbench/workbench.web.main.nls.js"></script>`
-			+ `<script src="${this.baseUrl}/out/vs/workbench/workbench.web.main.js"></script>`
-			+ `<script src="${this.baseUrl}/out/vs/code/browser/workbench/workbench.js"></script>`;
+		return lines.join('\n');
 	}
 
 	async renderCallback(): Promise<string> {
-		return (await fs.readFile(path.resolve(__dirname, `../../views/callback.html`))).toString();
+		return await readFileInRepo(`views/callback.html`);
 	}
 }
 

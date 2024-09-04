@@ -3,8 +3,8 @@
   "version": "0.0.57",
   "scripts": {
     "install-extensions": "npm i --prefix=fs-provider && npm i --prefix=sample",
-    "compile": "tsc -p ./ && npm run compile-fs-provider",
-    "watch": "tsc -w -p ./",
+    "compile": "tsc -b ./ && npm run compile-fs-provider",
+    "watch": "tsc -b -w ./",
     "prepack": "npm run compile",
     "test": "eslint src && tsc --noEmit",
     "preversion": "npm test",
@@ -15,9 +15,9 @@
     "sample-tests": "npm run compile && npm run compile-sample && node . --extensionDevelopmentPath=sample --extensionTestsPath=sample/dist/web/test/suite/index.js --headless=true sample/test-workspace",
     "empty": "npm run compile && node ."
   },
-  "main": "./out/index.js",
+  "main": "./out/server/index.js",
   "bin": {
-    "vscode-test-web": "./out/index.js"
+    "vscode-test-web": "./out/server/index.js"
   },
   "engines": {
     "node": ">=16"

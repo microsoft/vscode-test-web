@@ -41,7 +41,7 @@
             "skipFiles": [
                 "<node_internals>/**"
             ],
-            "program": "${workspaceFolder}/out/index.js",
+            "program": "${workspaceFolder}/out/server/index.js",
             "args": [
                 "--browserType=chromium",
                 "--extensionDevelopmentPath=${workspaceFolder}/sample",
@@ -58,7 +58,7 @@
             "skipFiles": [
                 "<node_internals>/**"
             ],
-            "program": "${workspaceFolder}/out/index.js",
+            "program": "${workspaceFolder}/out/server/index.js",
             "args": [
                 "--browserType=chromium",
                 "--extensionDevelopmentPath=${workspaceFolder}/sample",

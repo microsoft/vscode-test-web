@@ -90,7 +90,7 @@ export async function downloadAndUnzipVSCode(vscodeTestDir: string, quality: 'st
 	}
 
 	if (existsSync(vscodeTestDir)) {
-		await fs.rmdir(vscodeTestDir, { recursive: true, maxRetries: 5 });
+		await fs.rm(vscodeTestDir, { recursive: true, maxRetries: 5 });
 	}
 
 	await fs.mkdir(vscodeTestDir, { recursive: true });
@@ -196,3 +196,8 @@ export async function fileExists(path: string): Promise<boolean> {
 		return false;
 	}
 }
+
+export async function readFileInRepo(pathInRepo: string): Promise<string> {
+	return (await fs.readFile(path.resolve(__dirname, '../..', pathInRepo))).toString()
+}
+
