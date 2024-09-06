@@ -80,7 +80,7 @@ class Workbench {
 					"importMapElement.textContent = JSON.stringify(importMap, undefined, 2);",
 					"document.head.appendChild(importMapElement);",
 					"</script>");
-				workbenchMain = workbenchMain.replace('./workbench.api', `${this.baseUrl}/out/vs/workbench/workbench.web.main.js`);
+				workbenchMain = workbenchMain.replace('./workbench.api', `${this.baseUrl}/out/vs/workbench/workbench.web.main.internal.js`);
 				lines.push(`<script type="module">${workbenchMain}</script>`);
 			} else {
 				workbenchMain = workbenchMain.replace('./workbench.api', `${this.baseUrl}/out/vs/workbench/workbench.web.main.internal.js`);
