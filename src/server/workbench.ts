@@ -226,6 +226,12 @@ async function isESM(vsCodeDevLocation: string): Promise<boolean> {
 		const packageJSON = await fs.readFile(path.join(vsCodeDevLocation, 'out', 'package.json'));
 		return JSON.parse(packageJSON.toString()).type === 'module';
 	} catch (e) {
+		// ignore
+	}
+	try {
+		const packageJSON = await fs.readFile(path.join(vsCodeDevLocation, 'package.json'));
+		return JSON.parse(packageJSON.toString()).type === 'module';
+	} catch (e) {
 		return false;
 	}
 }
