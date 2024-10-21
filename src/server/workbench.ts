@@ -114,6 +114,7 @@ async function getWorkbenchOptions(
 	config: IConfig
 ): Promise<IWorkbenchOptions> {
 	const options: IWorkbenchOptions = {};
+	options.productConfiguration = { enableTelemetry: false };
 	if (config.extensionPaths) {
 		const extensionPromises = config.extensionPaths.map((extensionPath, index) => {
 			return scanForExtensions(extensionPath, {
@@ -156,12 +157,18 @@ async function getWorkbenchOptions(
 		}
 		options.additionalBuiltinExtensions.push({ scheme: ctx.protocol, authority: ctx.host, path: fsProviderExtensionPrefix });
 		options.folderUri = URI.parse(fsProviderFolderUri);
+
+		options.productConfiguration.extensionEnabledApiProposals = {
+			"vscode.vscode-test-web-fs": [
+				"fileSearchProvider",
+				"textSearchProvider"
+			]
+		};
 	} else if (config.folderUri) {
 		options.folderUri = URI.parse(config.folderUri);
 	} else {
 		options.workspaceUri = URI.from({ scheme: 'tmp', path: `/default.code-workspace` });
 	}
-	options.productConfiguration = { enableTelemetry: false };
 	return options;
 }
 
