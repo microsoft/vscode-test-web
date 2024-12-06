@@ -69,3 +69,4 @@ extends:
               DISPLAY: ':99.0'
 
         publishPackage: ${{ parameters.publishPackage }}
+        publishRequiresApproval: false
