@@ -224,7 +224,7 @@ async function getProductOverrides(vsCodeDevLocation: string): Promise<Record<st
 }
 
 async function getDevCssModules(vsCodeDevLocation: string): Promise<string[]> {
-	const glob = await import('glob')
+	const glob = await import('tinyglobby')
 	return glob.glob('**/*.css', { cwd: path.join(vsCodeDevLocation, 'out') });
 }
 
