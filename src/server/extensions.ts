@@ -78,7 +78,7 @@ export async function getScannedBuiltinExtensions(vsCodeDevLocation: string): Pr
 			}
 			const browserMainLocation = path.join(vsCodeDevLocation, 'extensions', ext.extensionPath, browserMain);
 			if (!(await fileExists(browserMainLocation))) {
-				console.log(`${browserMainLocation} not found. Make sure all extensions are compiled (use 'yarn watch-web').`);
+				console.log(`${browserMainLocation} not found. Make sure all extensions are compiled (use 'npm run watch-web').`);
 			}
 		}
 	}
