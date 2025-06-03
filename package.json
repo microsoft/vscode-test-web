@@ -36,7 +36,7 @@
     "koa-static": "^5.0.0",
     "minimist": "^1.2.8",
     "playwright": "^1.52.0",
-    "tar-fs": "^3.0.8",
+    "tar-fs": "^3.0.9",
     "vscode-uri": "^3.1.0"
   },
   "devDependencies": {
