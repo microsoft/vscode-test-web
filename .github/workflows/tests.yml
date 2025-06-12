@@ -2,6 +2,8 @@ on: [push]
 
 name: Tests
 
+permissions: {}
+
 jobs:
   build:
     strategy:
@@ -10,16 +12,18 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-      - name: Install Node.js
-        uses: actions/setup-node@v1
+        uses: actions/checkout@v4
         with:
-          node-version: 16.x
+          persist-credentials: false
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
       - name: Install root project dependencies
         run: npm ci
       - name: Install extensions dependencies
         run: npm run install-extensions
       - name: Run tests
-        uses: GabrielBB/xvfb-action@v1.0
+        uses: GabrielBB/xvfb-action@b706e4e27b14669b486812790492dc50ca16b465 # v1.7
         with:
           run: npm run sample-tests

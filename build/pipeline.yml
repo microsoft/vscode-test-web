@@ -39,13 +39,13 @@ extends:
         testPlatforms:
           - name: Linux
             nodeVersions:
-              - 18.17.x
+              - 22.x
           - name: MacOS
             nodeVersions:
-              - 18.17.x
+              - 22.x
           - name: Windows
             nodeVersions:
-              - 18.17.x
+              - 22.x
 
         testSteps:
           - script: npm ci
