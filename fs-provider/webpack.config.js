@@ -51,6 +51,9 @@ const webConfig = {
 		new webpack.ProvidePlugin({
 			process: 'process/browser', // provide a shim for the global `process` variable
 		}),
+		new webpack.DefinePlugin({
+			'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'local'),
+		}),
 	],
 	externals: {
 		vscode: 'commonjs vscode', // ignored because it doesn't exist

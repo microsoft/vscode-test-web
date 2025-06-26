@@ -5,15 +5,19 @@
 
 import { xhr } from 'request-light';
 import { Uri, FileStat, FileType, workspace, ExtensionContext, FileSystemError } from 'vscode';
-import { Entry, MemFileSystemProvider, File, Directory } from './fsProvider';
+import { Entry, File, Directory } from './fsProvider';
+import { CloudFileSystemProvider } from './cloudFsProvider';
 
 const SCHEME = 'vscode-test-web';
+
+// This is a mock repo name, it should get from the web url
+const repoName = 'webglhost';
 
 export function activate(context: ExtensionContext) {
 	const serverUri = context.extensionUri.with({ path: '/static/mount', query: undefined });
 	const serverBackedRootDirectory = new ServerBackedDirectory(serverUri, [], '');
 
-	const memFsProvider = new MemFileSystemProvider(SCHEME, serverBackedRootDirectory, context.extensionUri);
+	const memFsProvider = new CloudFileSystemProvider(SCHEME, context.extensionUri, serverBackedRootDirectory, repoName);
 	const disposable = workspace.registerFileSystemProvider(SCHEME, memFsProvider);
 	context.subscriptions.push(disposable);
 
