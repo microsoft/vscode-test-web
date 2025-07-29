@@ -30,7 +30,7 @@
     "gunzip-maybe": "^1.4.2",
     "http-proxy-agent": "^7.0.2",
     "https-proxy-agent": "^7.0.6",
-    "koa": "^3.0.0",
+    "koa": "^3.0.1",
     "koa-morgan": "^1.0.1",
     "koa-mount": "^4.2.0",
     "koa-static": "^5.0.0",
