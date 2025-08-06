@@ -30,7 +30,7 @@ export function configureMounts(config: IConfig, app: Koa): void {
 
 function fileOps(mountPrefix: string, folderMountPath: string): Router.Middleware {
 	const router = new Router();
-	router.get(`${mountPrefix}(/.*)?`, async (ctx, next) => {
+	router.get(`${mountPrefix}{/*path}`, async (ctx, next) => {
 		if (ctx.query.stat !== undefined) {
 			const p = path.join(folderMountPath, decodeURIComponent(ctx.path.substring(mountPrefix.length)));
 			try {

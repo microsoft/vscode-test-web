@@ -4,4 +4,4 @@ node_modules
 out
 sample/dist
 fs-provider/dist
-
+tsconfig.tsbuildinfo
