@@ -12,13 +12,52 @@ suite('Playwright UI Test Suite', () => {
 		assert.ok(files.length > 0, 'Should have test files');
 		await vscode.window.showTextDocument(files[0]);
 
-		// Wait for the editor to be loaded
-		const editorFound = await playwright.waitForSelector('.monaco-editor', { timeout: 10000, state: 'visible' });
-		assert.ok(editorFound, 'Monaco editor should be present');
+		// Wait for the editor to be loaded with debug capture on failure
+		try {
+			const editorFound = await playwright.waitForSelector('.monaco-editor', { timeout: 10000, state: 'visible' });
+			assert.ok(editorFound, 'Monaco editor should be present');
 
-		// Verify it's actually visible
-		const isVisible = await playwright.isVisible('.monaco-editor');
-		assert.ok(isVisible, 'Monaco editor should be visible');
+			// Verify it's actually visible
+			const isVisible = await playwright.isVisible('.monaco-editor');
+			assert.ok(isVisible, 'Monaco editor should be visible');
+		} catch (error) {
+			// Capture debugging information on failure
+			console.error('[DEBUG] Monaco editor test failed, capturing debug info...');
+
+			// Take a screenshot
+			try {
+				const screenshot = await playwright.screenshot({ type: 'png', fullPage: true });
+				console.error('[DEBUG] Screenshot captured (base64 length:', screenshot.length, ')');
+			} catch (screenshotError) {
+				console.error('[DEBUG] Failed to capture screenshot:', screenshotError);
+			}
+
+			// Get page content
+			try {
+				const html = await playwright.evaluate<string>('() => document.documentElement.outerHTML');
+				console.error('[DEBUG] Page HTML length:', html.length);
+				console.error('[DEBUG] Page HTML preview:', html.substring(0, 500));
+			} catch (htmlError) {
+				console.error('[DEBUG] Failed to get HTML:', htmlError);
+			}
+
+			// Check what elements are present
+			try {
+				const bodyClasses = await playwright.evaluate<string>('() => document.body.className');
+				console.error('[DEBUG] Body classes:', bodyClasses);
+
+				const workbenchFound = await playwright.querySelector('.monaco-workbench');
+				console.error('[DEBUG] Workbench found:', workbenchFound);
+
+				const divCount = await playwright.querySelectorAll('div');
+				console.error('[DEBUG] Total divs:', divCount);
+			} catch (debugError) {
+				console.error('[DEBUG] Failed to gather element info:', debugError);
+			}
+
+			// Re-throw the original error
+			throw error;
+		}
 	});
 
 	test('Check workbench title', async function() {
