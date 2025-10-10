@@ -8,10 +8,6 @@
  * between Web Workers and the Playwright API
  */
 (function() {
-	// Flag to indicate the bridge is available
-	(window as any).__playwrightBridgeReady = true;
-
-	// Create a wrapper that can be called from anywhere (including workers via indirect access)
 	// Use BroadcastChannel for worker communication
 	const channel = new BroadcastChannel('playwright-bridge');
 

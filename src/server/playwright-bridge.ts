@@ -128,7 +128,7 @@ export function setupPlaywrightBridge(page: playwright.Page, browser: playwright
 /**
  * Gets the client-side code that gets injected into the main page to bridge communication
  * between Web Workers and the Playwright API
- * 
+ *
  * @param esm Whether to use ESM or AMD version (defaults to AMD for compatibility)
  */
 export async function getPlaywrightBridgeClientCode(esm: boolean = false): Promise<string> {
