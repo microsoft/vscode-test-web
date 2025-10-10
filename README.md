@@ -71,6 +71,46 @@ async function go() {
 go()
 ```
 
+### Using Playwright for UI Testing
+
+Extension tests can access Playwright's full API capabilities for DOM queries, screenshots, and UI interactions:
+
+```ts
+import * as playwright from '@vscode/test-web/out/test-helpers/playwright';
+
+test('Verify editor is visible', async () => {
+  const isVisible = await playwright.isVisible('.monaco-editor');
+  assert.ok(isVisible, 'Editor should be visible');
+});
+
+test('Take screenshot', async () => {
+  const screenshot = await playwright.screenshot({ type: 'png', fullPage: false });
+  // screenshot is a base64-encoded PNG string
+});
+
+test('Query DOM elements', async () => {
+  const divCount = await playwright.querySelectorAll('div');
+  const title = await playwright.evaluate('() => document.title');
+  const hasWorkbench = await playwright.querySelector('.monaco-workbench');
+});
+```
+
+Available Playwright operations:
+
+- `screenshot(options)` - Take screenshots (returns base64 PNG)
+- `waitForSelector(selector, options)` - Wait for element to appear
+- `querySelector(selector)` - Check if element exists
+- `querySelectorAll(selector)` - Count matching elements
+- `isVisible(selector)` / `isHidden(selector)` - Check visibility
+- `click(selector, options)` - Click elements
+- `fill(selector, value, options)` - Fill input fields
+- `textContent(selector)` - Get element text
+- `getAttribute(selector, name)` - Get element attributes
+- `evaluate(script, arg)` - Execute JavaScript in page context
+- `keyboard.press(key)` / `keyboard.type(text)` - Keyboard interactions
+
+See `sample/src/web/test/suite/playwright.test.ts` for complete examples.
+
 CLI options:
 
 |Option|Argument Description|

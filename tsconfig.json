@@ -13,6 +13,9 @@
         },
         {
             "path": "./src/browser/tsconfig-amd.json"
+        },
+        {
+            "path": "./src/test-helpers/tsconfig.json"
         }
     ]
 }

@@ -1,0 +1,26 @@
+{
+	"compilerOptions": {
+		"target": "ES2020",
+		"module": "commonjs",
+		"lib": [
+			"ES2020",
+			"WebWorker"
+		],
+		"outDir": "../../out/test-helpers",
+		"declaration": true,
+		"strict": true,
+		"noImplicitAny": false,
+		"noImplicitThis": true,
+		"noUnusedLocals": true,
+		"alwaysStrict": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
+		"sourceMap": true,
+		"newLine": "lf",
+		"removeComments": false,
+		"composite": true
+	},
+	"include": [
+		"*.ts"
+	]
+}
