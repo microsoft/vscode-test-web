@@ -19,6 +19,13 @@
   "bin": {
     "vscode-test-web": "./out/server/index.js"
   },
+  "exports": {
+    ".": "./out/server/index.js",
+    "./playwright": {
+      "types": "./out/test-helpers/playwright.d.ts",
+      "default": "./out/test-helpers/playwright.js"
+    }
+  },
   "engines": {
     "node": ">=20"
   },

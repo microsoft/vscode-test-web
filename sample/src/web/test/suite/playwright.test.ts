@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import * as playwright from '@vscode/test-web/out/test-helpers/playwright';
+import * as playwright from '@vscode/test-web/playwright';
 
 suite('Playwright UI Test Suite', () => {
 

@@ -76,7 +76,7 @@ go()
 Extension tests can access Playwright's full API capabilities for DOM queries, screenshots, and UI interactions:
 
 ```ts
-import * as playwright from '@vscode/test-web/out/test-helpers/playwright';
+import * as playwright from '@vscode/test-web/playwright';
 
 test('Verify editor is visible', async () => {
   const isVisible = await playwright.isVisible('.monaco-editor');
