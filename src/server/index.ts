@@ -8,7 +8,7 @@
 
 import { IConfig, runServer, Static, Sources } from './main';
 import { downloadAndUnzipVSCode, directoryExists, fileExists, readFileInRepo } from './download';
-import { setupPlaywrightBridge, PLAYWRIGHT_BRIDGE_CLIENT_CODE } from './playwright-bridge';
+import { setupPlaywrightBridge, getPlaywrightBridgeClientCode } from './playwright-bridge';
 
 import * as playwright from 'playwright';
 import * as minimist from 'minimist';
@@ -223,7 +223,8 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 			setupPlaywrightBridge(page, browser);
 
 			// Inject client-side bridge code into the page
-			await page.addInitScript(PLAYWRIGHT_BRIDGE_CLIENT_CODE);
+			const bridgeClientCode = await getPlaywrightBridgeClientCode();
+			await page.addInitScript(bridgeClientCode);
 		};
 		console.log(`Opening browser on ${endpoint}...`);
 		const context = await openBrowser(endpoint, options, configPage);

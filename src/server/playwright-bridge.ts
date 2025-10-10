@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as playwright from 'playwright';
+import { readFileInRepo } from './download';
 
 /**
  * Serializable result from Playwright operations
@@ -125,42 +126,13 @@ export function setupPlaywrightBridge(page: playwright.Page, browser: playwright
 }
 
 /**
- * Client-side code that gets injected into the main page to bridge communication
+ * Gets the client-side code that gets injected into the main page to bridge communication
  * between Web Workers and the Playwright API
+ * 
+ * @param esm Whether to use ESM or AMD version (defaults to AMD for compatibility)
  */
-export const PLAYWRIGHT_BRIDGE_CLIENT_CODE = `
-(function() {
-	// Flag to indicate the bridge is available
-	window.__playwrightBridgeReady = true;
-
-	// Create a wrapper that can be called from anywhere (including workers via indirect access)
-	// Use BroadcastChannel for worker communication
-	const channel = new BroadcastChannel('playwright-bridge');
-
-	channel.onmessage = async (event) => {
-		if (event.data && event.data.__playwrightRequest) {
-			const { id, message } = event.data;
-
-			try {
-				// Call the exposed function
-				const result = await window.__playwrightBridge(message);
-
-				// Send result back via broadcast channel
-				channel.postMessage({
-					__playwrightResponse: true,
-					id: id,
-					result: result
-				});
-			} catch (error) {
-				channel.postMessage({
-					__playwrightResponse: true,
-					id: id,
-					result: { success: false, error: error.message }
-				});
-			}
-		}
-	};
-
-	console.log('[Playwright Bridge] Ready - extension tests can use Playwright APIs via BroadcastChannel');
-})();
-`;
+export async function getPlaywrightBridgeClientCode(esm: boolean = false): Promise<string> {
+	// Read the compiled JavaScript file (similar to how workbench.ts reads main.js)
+	const modulePath = esm ? 'out/browser/esm/playwright-bridge-client.js' : 'out/browser/amd/playwright-bridge-client.js';
+	return await readFileInRepo(modulePath);
+}
