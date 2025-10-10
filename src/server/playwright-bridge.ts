@@ -16,109 +16,197 @@ export interface PlaywrightResult {
 }
 
 /**
- * Message types for Playwright API calls
+ * Generic message for any Playwright API call
+ * Supports calling any method on page, browser, handles, or nested objects like page.keyboard
  */
-export type PlaywrightMessage =
-	| { type: 'screenshot'; options?: playwright.PageScreenshotOptions }
-	| { type: 'waitForSelector'; selector: string; options?: { timeout?: number; state?: 'attached' | 'detached' | 'visible' | 'hidden' } }
-	| { type: 'querySelector'; selector: string }
-	| { type: 'querySelectorAll'; selector: string }
-	| { type: 'click'; selector: string; options?: { timeout?: number; force?: boolean } }
-	| { type: 'fill'; selector: string; value: string; options?: { timeout?: number; force?: boolean } }
-	| { type: 'textContent'; selector: string }
-	| { type: 'getAttribute'; selector: string; name: string }
-	| { type: 'isVisible'; selector: string }
-	| { type: 'isHidden'; selector: string }
-	| { type: 'evaluate'; script: string; arg?: unknown }
-	| { type: 'waitForTimeout'; timeout: number }
-	| { type: 'keyboard.press'; key: string; options?: { delay?: number } }
-	| { type: 'keyboard.type'; text: string; options?: { delay?: number } };
+export interface PlaywrightMessage {
+	/** The target object path (e.g., 'page', 'browser', 'page.keyboard') or a handleId */
+	target: string;
+	/** The method name to call */
+	method: string;
+	/** Arguments to pass to the method */
+	args?: unknown[];
+}
+
+/**
+ * Registry to store ElementHandles and other non-serializable objects
+ * so they can be referenced from the worker
+ */
+class HandleRegistry {
+	private handles = new Map<string, any>();
+	private nextId = 1;
+
+	/**
+	 * Store a handle and return its ID
+	 */
+	register(handle: any): string {
+		const id = `handle_${this.nextId++}`;
+		this.handles.set(id, handle);
+		return id;
+	}
+
+	/**
+	 * Retrieve a handle by ID
+	 */
+	get(id: string): any {
+		return this.handles.get(id);
+	}
+
+	/**
+	 * Check if an ID exists
+	 */
+	has(id: string): boolean {
+		return this.handles.has(id);
+	}
+
+	/**
+	 * Remove a handle (for cleanup)
+	 */
+	delete(id: string): boolean {
+		return this.handles.delete(id);
+	}
+
+	/**
+	 * Clear all handles
+	 */
+	clear(): void {
+		this.handles.clear();
+	}
+}
+
+/**
+ * Helper to safely access nested properties on an object
+ */
+function getNestedProperty(obj: any, path: string): any {
+	const parts = path.split('.');
+	let current = obj;
+	for (const part of parts) {
+		if (current && typeof current === 'object' && part in current) {
+			current = current[part];
+		} else {
+			return undefined;
+		}
+	}
+	return current;
+}
+
+/**
+ * Check if a value is an ElementHandle or other Playwright handle type
+ */
+function isHandle(value: any): boolean {
+	// Check if it's an ElementHandle, JSHandle, or has an evaluate method
+	// This is a heuristic - Playwright handles typically have these methods
+	return value && typeof value === 'object' &&
+		(typeof value.evaluate === 'function' ||
+		 typeof value.asElement === 'function' ||
+		 value.constructor?.name?.includes('Handle'));
+}
+
+/**
+ * Helper to serialize data for transmission (handles Buffers, ElementHandles, etc.)
+ */
+function serializeResult(data: unknown, registry: HandleRegistry): unknown {
+	// Convert Buffers to base64 for transmission (e.g., screenshots)
+	if (Buffer.isBuffer(data)) {
+		return data.toString('base64');
+	}
+
+	// If it's a handle, register it and return a handle reference
+	if (isHandle(data)) {
+		const handleId = registry.register(data);
+		return { __handleId: handleId };
+	}
+
+	// If it's an array, serialize each element
+	if (Array.isArray(data)) {
+		return data.map(item => serializeResult(item, registry));
+	}
+
+	// Return everything else as-is
+	return data;
+}
+
+/**
+ * Helper to deserialize arguments (convert handle references back to actual handles, function strings to functions)
+ */
+function deserializeArgs(args: unknown[], registry: HandleRegistry): unknown[] {
+	return args.map(arg => {
+		// Check if it's a handle reference
+		if (arg && typeof arg === 'object' && '__handleId' in arg) {
+			const handleId = (arg as any).__handleId;
+			return registry.get(handleId);
+		}
+		// Check if it's a serialized function
+		if (arg && typeof arg === 'object' && '__function' in arg) {
+			const functionString = (arg as any).__function;
+			// Convert the function string back to a function
+			// eslint-disable-next-line no-new-func
+			return new Function(`return (${functionString})`)();
+		}
+		// If it's an array, deserialize recursively
+		if (Array.isArray(arg)) {
+			return deserializeArgs(arg, registry);
+		}
+		return arg;
+	});
+}
 
 /**
  * Sets up the Playwright bridge by exposing functions that can be called from the browser
  */
 export function setupPlaywrightBridge(page: playwright.Page, browser: playwright.Browser): void {
-	// Expose a function that handles all Playwright API calls
+	// Create a context object with available APIs
+	const context = { page, browser };
+
+	// Create a handle registry for storing ElementHandles and other non-serializable objects
+	const registry = new HandleRegistry();
+
+	// Expose a function that handles all Playwright API calls dynamically
 	page.exposeFunction('__playwrightBridge', async (message: PlaywrightMessage): Promise<PlaywrightResult> => {
 		try {
-			switch (message.type) {
-				case 'screenshot': {
-					const screenshot = await page.screenshot(message.options);
-					// Convert Buffer to base64 for transmission
-					const base64 = screenshot.toString('base64');
-					return { success: true, data: base64 };
-				}
-
-				case 'waitForSelector': {
-					const element = await page.waitForSelector(message.selector, message.options as any);
-					return { success: true, data: element !== null };
-				}
-
-				case 'querySelector': {
-					const element = await page.$(message.selector);
-					return { success: true, data: element !== null };
-				}
-
-				case 'querySelectorAll': {
-					const elements = await page.$$(message.selector);
-					return { success: true, data: elements.length };
-				}
-
-				case 'click': {
-					await page.click(message.selector, message.options as any);
-					return { success: true };
-				}
-
-				case 'fill': {
-					await page.fill(message.selector, message.value, message.options as any);
-					return { success: true };
-				}
-
-				case 'textContent': {
-					const text = await page.textContent(message.selector);
-					return { success: true, data: text };
-				}
-
-				case 'getAttribute': {
-					const value = await page.getAttribute(message.selector, message.name);
-					return { success: true, data: value };
-				}
-
-				case 'isVisible': {
-					const visible = await page.isVisible(message.selector);
-					return { success: true, data: visible };
-				}
-
-				case 'isHidden': {
-					const hidden = await page.isHidden(message.selector);
-					return { success: true, data: hidden };
-				}
-
-				case 'evaluate': {
-					// eslint-disable-next-line no-new-func
-					const fn = new Function('arg', `return (${message.script})(arg)`);
-					const result = await page.evaluate(fn as any, message.arg);
-					return { success: true, data: result };
-				}
-
-				case 'waitForTimeout': {
-					await page.waitForTimeout(message.timeout);
-					return { success: true };
-				}
-
-				case 'keyboard.press': {
-					await page.keyboard.press(message.key, message.options);
-					return { success: true };
-				}
-
-				case 'keyboard.type': {
-					await page.keyboard.type(message.text, message.options);
-					return { success: true };
-				}
-
-				default:
-					return { success: false, error: `Unknown message type: ${(message as { type: string }).type}` };
+			// Validate message format
+			if (!message || typeof message !== 'object') {
+				return { success: false, error: 'Invalid message format' };
 			}
+
+			const { target, method, args = [] } = message;
+
+			if (!target || !method) {
+				return { success: false, error: 'Message must include target and method' };
+			}
+
+			// Deserialize arguments (convert handle references to actual handles)
+			const deserializedArgs = deserializeArgs(args, registry);
+
+			// Determine the target object
+			let targetObj: any;
+
+			// Check if target is a handle ID
+			if (registry.has(target)) {
+				targetObj = registry.get(target);
+			} else {
+				// Otherwise, get from context (e.g., 'page', 'browser', 'page.keyboard')
+				targetObj = getNestedProperty(context, target);
+			}
+
+			if (!targetObj) {
+				return { success: false, error: `Target '${target}' not found` };
+			}
+
+			// Get the method
+			const fn = targetObj[method];
+
+			if (typeof fn !== 'function') {
+				return { success: false, error: `Method '${method}' is not a function on target '${target}'` };
+			}
+
+			// Call the method with the provided arguments
+			const result = await fn.apply(targetObj, deserializedArgs);
+
+			// Serialize the result for transmission
+			const serializedData = serializeResult(result, registry);
+
+			return { success: true, data: serializedData };
 		} catch (error) {
 			return { success: false, error: error instanceof Error ? error.message : String(error) };
 		}
