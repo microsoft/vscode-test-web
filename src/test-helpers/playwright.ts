@@ -4,12 +4,10 @@
  *--------------------------------------------------------------------------------------------*/
 
 /**
- * Playwright API bridge for extension tests
+ * Playwright API bridge for extension tests.
  *
  * This module provides access to Playwright capabilities from within extension tests
  * running in a Web Worker context. It communicates with the main page via BroadcastChannel.
- *
- * Uses Playwright types to ensure 100% API compatibility.
  *
  * @example
  * ```typescript
@@ -254,14 +252,40 @@ function createDynamicProxy(target: string): any {
  */
 export const page: Page = createDynamicProxy('page') as Page;
 
-/** Internal: get current server registry size */
-export async function __registrySize(): Promise<number> {
+/**
+ * Get the current number of active Playwright handle entries stored on the server.
+ *
+ * Each ElementHandle / Locator (and any other non‑serializable Playwright object the
+ * bridge returns) is stored server‑side with a generated `handle_<n>` id. The size
+ * reported here reflects how many such entries are presently retained.
+ *
+ * Default behavior (with auto clear enabled) is that this returns 0 at the start of
+ * every test. It will grow as you obtain new element/locator handles inside a test.
+ *
+ * Use cases:
+ * - Diagnostics in tests (e.g. ensuring you are not leaking handles when auto clear is disabled)
+ * - Asserting expected handle creation in framework / integration tests.
+ *
+ * NOTE: If you have disabled auto clearing via {@link disableAutoClearRegistry}, the
+ * value can grow across tests until you manually call {@link clearRegistry}.
+ */
+export async function getRegistrySize(): Promise<number> {
 	const result = await sendPlaywrightMessage('__registry', 'size');
 	return checkResult<number>(result);
 }
 
-/** Internal: clear server registry */
-export async function __clearRegistry(): Promise<void> {
+/**
+ * Clear (dispose) all server-side Playwright handles currently registered.
+ *
+ * This is invoked automatically before each test when auto clear is enabled
+ * (the default). You can call it manually when auto clear is disabled to
+ * reclaim memory and ensure stale handle ids are invalidated.
+ *
+ * After calling this, any previously obtained handle proxies will cease to
+ * function (future method calls will fail with a not-found error that includes
+ * guidance about auto clearing).
+ */
+export async function clearRegistry(): Promise<void> {
 	const result = await sendPlaywrightMessage('__registry', 'clear');
 	checkResult<boolean>(result);
 }
@@ -270,11 +294,34 @@ export async function __clearRegistry(): Promise<void> {
 // This preserves a clean handle space per test while reusing the same page proxy.
 // Safe: runs before user-defined beforeEach hooks in nested suites.
 // Ignore if mocha not present (e.g., outside test environment).
+let __autoClearRegistry = true;
+
+/**
+ * Disable the automatic clearing of the server-side Playwright handle registry
+ * that normally runs before each test (root-level Mocha beforeEach).
+ *
+ * Use this when you intentionally want to keep handles (e.g. element / locator proxies)
+ * alive across multiple tests. Be aware that disabling this may allow the registry
+ * to grow unbounded if you keep creating new handles without manual cleanup.
+ *
+ * Re‑enable with {@link enableAutoClearRegistry} when done to restore default isolation.
+ */
+export function disableAutoClearRegistry(): void { __autoClearRegistry = false; }
+
+/**
+ * Re‑enable the default behavior of clearing the server-side handle registry
+ * before each test. This provides test isolation and prevents stale handle
+ * references from leaking across tests.
+ */
+export function enableAutoClearRegistry(): void { __autoClearRegistry = true; }
+
 try {
 	const mochaGlobal: any = (globalThis as any).mocha;
 	if (mochaGlobal?.suite && !mochaGlobal.__playwrightRegistryHookInstalled) {
 		mochaGlobal.suite.beforeEach(function () {
-			return __clearRegistry();
+			if (__autoClearRegistry) {
+				return clearRegistry();
+			}
 		});
 		mochaGlobal.__playwrightRegistryHookInstalled = true;
 	}

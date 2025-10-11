@@ -199,7 +199,11 @@ export function setupPlaywrightBridge(page: playwright.Page, browser: playwright
 			}
 
 			if (!targetObj) {
-				return { success: false, error: `Target '${target}' not found` };
+				let hint = '';
+				if (target.startsWith('handle_')) {
+					hint = " (Possibly cleared between tests. Disable auto clear via disableAutoClearRegistry() if you need to retain handles.)";
+				}
+				return { success: false, error: `Target '${target}' not found${hint}` };
 			}
 
 			// Get the method
