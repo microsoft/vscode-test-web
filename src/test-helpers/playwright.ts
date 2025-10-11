@@ -74,11 +74,15 @@ function isPlaywrightResponse(data: unknown): data is PlaywrightResponse {
 function sendPlaywrightMessage(target: string, method: string, args: unknown[] = []): Promise<PlaywrightResult> {
 	return new Promise((resolve, reject) => {
 		const id = ++requestId;
+
+		let handler: (event: MessageEvent) => void;
+
 		const timeout = setTimeout(() => {
+			channel.removeEventListener('message', handler);
 			reject(new Error('Playwright bridge timeout - is the bridge initialized?'));
 		}, 30000);
 
-		const handler = (event: MessageEvent) => {
+		handler = (event: MessageEvent) => {
 			if (isPlaywrightResponse(event.data) && event.data.id === id) {
 				clearTimeout(timeout);
 				channel.removeEventListener('message', handler);
