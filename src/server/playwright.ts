@@ -234,6 +234,6 @@ export function setupPlaywrightBridge(page: playwright.Page, browser: playwright
  */
 export async function getPlaywrightBridgeClientCode(esm: boolean = false): Promise<string> {
 	// Read the compiled JavaScript file (similar to how workbench.ts reads main.js)
-	const modulePath = esm ? 'out/browser/esm/playwright-bridge.js' : 'out/browser/amd/playwright-bridge.js';
+	const modulePath = esm ? 'out/browser/esm/playwright.js' : 'out/browser/amd/playwright.js';
 	return await readFileInRepo(modulePath);
 }

@@ -269,7 +269,7 @@ export const page: Page = createDynamicProxy('page') as Page;
  * NOTE: If you have disabled auto clearing via {@link disableAutoClearRegistry}, the
  * value can grow across tests until you manually call {@link clearRegistry}.
  */
-export async function getRegistrySize(): Promise<number> {
+export async function __getRegistrySize(): Promise<number> {
 	const result = await sendPlaywrightMessage('__registry', 'size');
 	return checkResult<number>(result);
 }
