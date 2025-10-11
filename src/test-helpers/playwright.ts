@@ -253,3 +253,31 @@ function createDynamicProxy(target: string): any {
  * ```
  */
 export const page: Page = createDynamicProxy('page') as Page;
+
+/** Internal: get current server registry size */
+export async function __registrySize(): Promise<number> {
+	const result = await sendPlaywrightMessage('__registry', 'size');
+	return checkResult<number>(result);
+}
+
+/** Internal: clear server registry */
+export async function __clearRegistry(): Promise<void> {
+	const result = await sendPlaywrightMessage('__registry', 'clear');
+	checkResult<boolean>(result);
+}
+
+// Install a root-level beforeEach to clear server registry between tests (opaque to users)
+// This preserves a clean handle space per test while reusing the same page proxy.
+// Safe: runs before user-defined beforeEach hooks in nested suites.
+// Ignore if mocha not present (e.g., outside test environment).
+try {
+	const mochaGlobal: any = (globalThis as any).mocha;
+	if (mochaGlobal?.suite && !mochaGlobal.__playwrightRegistryHookInstalled) {
+		mochaGlobal.suite.beforeEach(function () {
+			return __clearRegistry();
+		});
+		mochaGlobal.__playwrightRegistryHookInstalled = true;
+	}
+} catch {
+	// Ignore errors if mocha not initialized yet
+}

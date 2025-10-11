@@ -168,6 +168,18 @@ export function setupPlaywrightBridge(page: playwright.Page, browser: playwright
 
 			const { target, method, args = [] } = message;
 
+			// Special internal registry/maintenance commands
+			if (target === '__registry') {
+				if (method === 'size') {
+					return { success: true, data: registry['handles']?.size ?? 0 } as PlaywrightResult; // size only
+				}
+				if (method === 'clear') {
+					registry.clear();
+					return { success: true, data: true } as PlaywrightResult;
+				}
+				return { success: false, error: `Unknown registry method '${method}'` };
+			}
+
 			if (!target || !method) {
 				return { success: false, error: 'Message must include target and method' };
 			}
