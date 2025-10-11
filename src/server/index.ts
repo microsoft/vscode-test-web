@@ -8,7 +8,7 @@
 
 import { IConfig, runServer, Static, Sources } from './main';
 import { downloadAndUnzipVSCode, directoryExists, fileExists, readFileInRepo } from './download';
-import { setupPlaywrightBridge, getPlaywrightBridgeClientCode } from './playwright-bridge';
+import { setupPlaywrightBridge, getPlaywrightBridgeClientCode } from './playwright';
 
 import * as playwright from 'playwright';
 import * as minimist from 'minimist';
