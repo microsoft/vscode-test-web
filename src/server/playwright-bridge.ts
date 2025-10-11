@@ -5,28 +5,12 @@
 
 import * as playwright from 'playwright';
 import { readFileInRepo } from './download';
-
-/**
- * Serializable result from Playwright operations
- */
-export interface PlaywrightResult {
-	success: boolean;
-	data?: unknown;
-	error?: string;
-}
-
-/**
- * Generic message for any Playwright API call
- * Supports calling any method on page, browser, handles, or nested objects like page.keyboard
- */
-export interface PlaywrightMessage {
-	/** The target object path (e.g., 'page', 'browser', 'page.keyboard') or a handleId */
-	target: string;
-	/** The method name to call */
-	method: string;
-	/** Arguments to pass to the method */
-	args?: unknown[];
-}
+import type {
+	PlaywrightResult,
+	PlaywrightMessage,
+	HandleReference,
+	SerializedFunction
+} from '../playwright.api';
 
 /**
  * Registry to store ElementHandles and other non-serializable objects
@@ -114,7 +98,8 @@ function serializeResult(data: unknown, registry: HandleRegistry): unknown {
 	// If it's a handle, register it and return a handle reference
 	if (isHandle(data)) {
 		const handleId = registry.register(data);
-		return { __handleId: handleId };
+		const handleRef: HandleReference = { __handleId: handleId };
+		return handleRef;
 	}
 
 	// If it's an array, serialize each element
@@ -127,21 +112,33 @@ function serializeResult(data: unknown, registry: HandleRegistry): unknown {
 }
 
 /**
+ * Type guard to check if an object is a HandleReference
+ */
+function isHandleReference(arg: unknown): arg is HandleReference {
+	return arg !== null && typeof arg === 'object' && '__handleId' in arg;
+}
+
+/**
+ * Type guard to check if an object is a SerializedFunction
+ */
+function isSerializedFunction(arg: unknown): arg is SerializedFunction {
+	return arg !== null && typeof arg === 'object' && '__function' in arg;
+}
+
+/**
  * Helper to deserialize arguments (convert handle references back to actual handles, function strings to functions)
  */
 function deserializeArgs(args: unknown[], registry: HandleRegistry): unknown[] {
 	return args.map(arg => {
 		// Check if it's a handle reference
-		if (arg && typeof arg === 'object' && '__handleId' in arg) {
-			const handleId = (arg as any).__handleId;
-			return registry.get(handleId);
+		if (isHandleReference(arg)) {
+			return registry.get(arg.__handleId);
 		}
 		// Check if it's a serialized function
-		if (arg && typeof arg === 'object' && '__function' in arg) {
-			const functionString = (arg as any).__function;
+		if (isSerializedFunction(arg)) {
 			// Convert the function string back to a function
 			// eslint-disable-next-line no-new-func
-			return new Function(`return (${functionString})`)();
+			return new Function(`return (${arg.__function})`)();
 		}
 		// If it's an array, deserialize recursively
 		if (Array.isArray(arg)) {

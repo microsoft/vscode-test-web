@@ -28,20 +28,16 @@
  */
 
 import type { Page, ElementHandle } from 'playwright';
+import type {
+	PlaywrightResult,
+	PlaywrightMessage,
+	PlaywrightRequest,
+	PlaywrightResponse,
+	HandleReference,
+	SerializedFunction
+} from '../playwright.api';
 
 let requestId = 0;
-
-interface PlaywrightMessage {
-	target: string;
-	method: string;
-	args?: unknown[];
-}
-
-interface PlaywrightResult {
-	success: boolean;
-	data?: unknown;
-	error?: string;
-}
 
 // Initialize BroadcastChannel for communication with main page
 // @ts-ignore - BroadcastChannel is available in worker context
@@ -54,7 +50,8 @@ function serializeArgs(args: unknown[]): unknown[] {
 	return args.map(arg => {
 		// Convert functions to their string representation
 		if (typeof arg === 'function') {
-			return { __function: arg.toString() };
+			const serializedFunc: SerializedFunction = { __function: arg.toString() };
+			return serializedFunc;
 		}
 		// Recursively serialize arrays
 		if (Array.isArray(arg)) {
@@ -62,6 +59,13 @@ function serializeArgs(args: unknown[]): unknown[] {
 		}
 		return arg;
 	});
+}
+
+/**
+ * Type guard to check if message data is a PlaywrightResponse
+ */
+function isPlaywrightResponse(data: unknown): data is PlaywrightResponse {
+	return data !== null && typeof data === 'object' && '__playwrightResponse' in data;
 }
 
 /**
@@ -75,7 +79,7 @@ function sendPlaywrightMessage(target: string, method: string, args: unknown[] =
 		}, 30000);
 
 		const handler = (event: MessageEvent) => {
-			if (event.data && event.data.__playwrightResponse && event.data.id === id) {
+			if (isPlaywrightResponse(event.data) && event.data.id === id) {
 				clearTimeout(timeout);
 				channel.removeEventListener('message', handler);
 				resolve(event.data.result);
@@ -89,11 +93,12 @@ function sendPlaywrightMessage(target: string, method: string, args: unknown[] =
 
 		// Send message via BroadcastChannel
 		const message: PlaywrightMessage = { target, method, args: serializedArgs };
-		channel.postMessage({
+		const request: PlaywrightRequest = {
 			__playwrightRequest: true,
 			id,
 			message
-		});
+		};
+		channel.postMessage(request);
 	});
 }
 
@@ -108,17 +113,19 @@ function checkResult<T>(result: PlaywrightResult): T {
 }
 
 /**
+ * Type guard to check if data is a HandleReference
+ */
+function isHandleReference(data: unknown): data is HandleReference {
+	return data !== null && typeof data === 'object' && '__handleId' in data;
+}
+
+/**
  * Helper to unwrap results and convert handle references to proxies
  */
 function unwrapResult(data: unknown): unknown {
 	// Check if it's a handle reference
-	if (data && typeof data === 'object' && '__handleId' in data) {
-		return createElementHandleProxy((data as any).__handleId);
-	}
-
-	// Check if it's a proxy reference (nested object like keyboard, mouse, etc.)
-	if (data && typeof data === 'object' && '__proxyTarget' in data) {
-		return createDynamicProxy((data as any).__proxyTarget);
+	if (isHandleReference(data)) {
+		return createElementHandleProxy(data.__handleId);
 	}
 
 	// If it's an array, unwrap each element
