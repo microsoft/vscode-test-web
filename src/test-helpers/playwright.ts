@@ -6,7 +6,7 @@
 /**
  * Playwright Test integration for @vscode/test-web.
  *
- * This module provides @playwright/test-style fixtures for extension tests running
+ * This module provides @playwright/test style fixtures for extension tests running
  * in a Web Worker context. It communicates with the main page via BroadcastChannel
  * to access server-side Playwright instances.
  *
@@ -474,34 +474,3 @@ export function suite(name: string, suiteFn: () => void): void {
 	}
 	mochaSuite(name, suiteFn);
 }
-
-/**
- * Default export for backward compatibility.
- *
- * **DEPRECATED**: This export is deprecated and will be removed in a future version.
- * Use the `test` function with fixtures instead.
- *
- * @deprecated Use `import { test } from '@vscode/test-web/playwright'` and access
- * fixtures through the test function parameter: `test('name', async ({ page }) => { })`
- *
- * @example
- * ```typescript
- * // OLD (deprecated):
- * import playwright from '@vscode/test-web/playwright';
- * test('test', async () => {
- *   await playwright.page.$('.selector');
- * });
- *
- * // NEW (recommended):
- * import { test } from '@vscode/test-web/playwright';
- * test('test', async ({ page }) => {
- *   await page.$('.selector');
- * });
- * ```
- */
-const legacyFixtures = {
-	page: createDynamicProxy('page') as Page,
-	browser: createDynamicProxy('browser') as Browser,
-};
-
-export default legacyFixtures;
