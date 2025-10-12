@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { test, suite, playwrightRegistry } from '@vscode/test-web/playwright';
+import { test, suite, playwrightRegistry, playwright } from '@vscode/test-web/playwright';
 
 suite('Playwright UI Test Suite', () => {
 
@@ -246,5 +246,59 @@ suite('Playwright registry management', () => {
 		const sizeNow = await playwrightRegistry.getSize();
 		assert.ok(sizeNow >= 2, 'Registry size should persist when auto clear disabled');
 		playwrightRegistry.enableAutoClear();
+	});
+});
+
+suite('Playwright request context', () => {
+	test('can use fixture request context', async ({ request }) => {
+		// Use the request fixture provided by the test framework
+		const response = await request.get('https://jsonplaceholder.typicode.com/posts/1');
+		assert.ok(response.ok(), 'Response should be successful');
+
+		const data = await response.json();
+		assert.ok(data, 'Response should have data');
+		assert.strictEqual(typeof data, 'object', 'Response should be an object');
+	});
+
+	test('can create new request context with playwright.request.newContext()', async () => {
+		// Create a new independent request context using the playwright library
+		const request = await playwright.request.newContext();
+
+		try {
+			const response = await request.get('https://jsonplaceholder.typicode.com/posts/1');
+			assert.ok(response.ok(), 'Response should be successful');
+
+			const data = await response.json();
+			assert.ok(data, 'Response should have data');
+			assert.strictEqual(typeof data, 'object', 'Response should be an object');
+		} finally {
+			// Clean up the request context
+			await request.dispose();
+		}
+	});
+
+	test('fixture and new contexts are independent', async ({ request }) => {
+		// Create a new context
+		const newRequest = await playwright.request.newContext({
+			extraHTTPHeaders: {
+				'X-Custom-Header': 'test-value'
+			}
+		});
+
+		try {
+			// Both should work independently
+			const fixtureResponse = await request.get('https://jsonplaceholder.typicode.com/posts/1');
+			const newResponse = await newRequest.get('https://jsonplaceholder.typicode.com/posts/2');
+
+			assert.ok(fixtureResponse.ok(), 'Fixture request should work');
+			assert.ok(newResponse.ok(), 'New request context should work');
+
+			const fixtureData = await fixtureResponse.json();
+			const newData = await newResponse.json();
+
+			assert.notStrictEqual(fixtureData, newData, 'Should get different data');
+		} finally {
+			await newRequest.dispose();
+		}
 	});
 });

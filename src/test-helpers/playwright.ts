@@ -15,7 +15,7 @@
  * Use the `test` function to define tests with fixtures:
  *
  * ```typescript
- * import { test } from '@vscode/test-web/playwright';
+ * import { test, playwright } from '@vscode/test-web/playwright';
  *
  * test('UI element is visible', async ({ page }) => {
  *   const element = await page.$('.monaco-editor');
@@ -27,9 +27,16 @@
  *   await page.keyboard.press('Enter');
  * });
  *
- * test('Make API requests', async ({ request }) => {
+ * test('Make API requests with fixture', async ({ request }) => {
  *   const response = await request.get('https://api.example.com/data');
  *   assert.ok(response.ok());
+ * });
+ *
+ * test('Create new request context', async () => {
+ *   const request = await playwright.request.newContext();
+ *   const response = await request.get('https://api.example.com/data');
+ *   assert.ok(response.ok());
+ *   await request.dispose();
  * });
  *
  * test('Use context', async ({ context }) => {
@@ -42,6 +49,7 @@
  * - `page`: Playwright Page instance for interacting with VS Code workbench
  * - `context`: Playwright BrowserContext instance for context-level operations
  * - `request`: Playwright APIRequestContext instance for making HTTP API requests
+ * - `playwright`: Playwright library object for creating new contexts and accessing browser types
  *
  * All fixtures are dynamically proxied - any fixture property available on the
  * server-side context object will be accessible in tests.
@@ -459,3 +467,28 @@ export function suite(name: string, suiteFn: () => void): void {
 	}
 	mochaSuite(name, suiteFn);
 }
+
+/**
+ * Playwright library proxy for accessing the full Playwright API.
+ *
+ * This provides access to the Playwright library object, allowing you to:
+ * - Create new request contexts: `playwright.request.newContext()`
+ * - Access browser types: `playwright.chromium`, `playwright.firefox`, `playwright.webkit`
+ * - Use other Playwright APIs not available through fixtures
+ *
+ * @example
+ * ```typescript
+ * import { playwright, test } from '@vscode/test-web/playwright';
+ *
+ * test('create independent request context', async () => {
+ *   const request = await playwright.request.newContext();
+ *   try {
+ *     const response = await request.get('https://api.example.com/data');
+ *     assert.ok(response.ok());
+ *   } finally {
+ *     await request.dispose();
+ *   }
+ * });
+ * ```
+ */
+export const playwright = createDynamicProxy('playwright');

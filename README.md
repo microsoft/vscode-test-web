@@ -131,6 +131,60 @@ Tests receive Playwright fixtures as parameters, following the `@playwright/test
 
 All fixtures are dynamically proxied - any fixture property available on the server-side context object will be accessible in tests.
 
+#### Playwright Library Access
+
+For advanced scenarios, you can access the full Playwright library to create additional contexts or access browser types:
+
+```ts
+import { playwright } from '@vscode/test-web/playwright';
+import * as assert from 'assert';
+
+test('Create independent request context', async () => {
+  // Create a new API request context with custom configuration
+  const request = await playwright.request.newContext({
+    baseURL: 'https://api.example.com',
+    extraHTTPHeaders: {
+      'Authorization': 'Bearer token'
+    }
+  });
+
+  try {
+    const response = await request.get('/data');
+    assert.ok(response.ok());
+  } finally {
+    // Clean up the context when done
+    await request.dispose();
+  }
+});
+
+test('Use fixture and new contexts together', async ({ request }) => {
+  // Use the fixture request context (shares cookies with the browser)
+  const fixtureResponse = await request.get('https://example.com/data');
+
+  // Create an independent context (isolated cookies/storage)
+  const newRequest = await playwright.request.newContext();
+  try {
+    const newResponse = await newRequest.get('https://example.com/data');
+    // Both contexts work independently
+  } finally {
+    await newRequest.dispose();
+  }
+});
+```
+
+**Key differences:**
+
+- **Fixture `request`**: Shares cookie storage with the browser context. Changes to cookies in API requests affect the browser and vice versa.
+- **`playwright.request.newContext()`**: Creates an isolated context with its own cookie storage, independent from the browser.
+
+The `playwright` proxy provides access to:
+
+- `playwright.request.newContext()` - Create new API request contexts
+- `playwright.chromium` - Chromium browser type
+- `playwright.firefox` - Firefox browser type
+- `playwright.webkit` - WebKit browser type
+- Other Playwright library APIs
+
 #### Registry Management (Advanced)
 
 For diagnostic purposes and advanced scenarios, use the `playwrightRegistry` export:

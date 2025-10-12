@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import type { PlaywrightTestArgs } from '@playwright/test';
+import * as playwright from 'playwright';
 import { readFileInRepo } from './download';
 import type {
 	PlaywrightResult,
@@ -80,10 +81,14 @@ function getNestedProperty(obj: any, path: string): any {
 function isHandle(value: any): boolean {
 	// Check if it's an ElementHandle, JSHandle, or has an evaluate method
 	// This is a heuristic - Playwright handles typically have these methods
+	// Also check for APIRequestContext and other complex Playwright objects
 	return value && typeof value === 'object' &&
 		(typeof value.evaluate === 'function' ||
 		 typeof value.asElement === 'function' ||
-		 value.constructor?.name?.includes('Handle'));
+		 typeof value.dispose === 'function' ||  // APIRequestContext has dispose
+		 typeof value.fetch === 'function' ||    // APIRequestContext has fetch
+		 value.constructor?.name?.includes('Handle') ||
+		 value.constructor?.name?.includes('Context'));
 }
 
 /**
@@ -153,7 +158,8 @@ function deserializeArgs(args: unknown[], registry: HandleRegistry): unknown[] {
  */
 export function setupPlaywrightBridge(fixtures: PlaywrightTestArgs): void {
 	// Use the fixtures object directly as the context for the bridge
-	const context = fixtures;
+	// Add the playwright library to the context so tests can access it
+	const context: any = { ...fixtures, playwright };
 
 	// Create a handle registry for storing ElementHandles and other non-serializable objects
 	const registry = new HandleRegistry();
