@@ -76,19 +76,67 @@ function getNestedProperty(obj: any, path: string): any {
 }
 
 /**
- * Check if a value is an ElementHandle or other Playwright handle type
+ * Check if a value should be stored as a handle
+ *
+ * Based on Playwright's serialization algorithm - a value needs to be stored as a handle
+ * if it cannot be serialized directly. This recursively checks arrays and objects
+ * to see if they contain any non-serializable values.
  */
-function isHandle(value: any): boolean {
-	// Check if it's an ElementHandle, JSHandle, or has an evaluate method
-	// This is a heuristic - Playwright handles typically have these methods
-	// Also check for APIRequestContext and other complex Playwright objects
-	return value && typeof value === 'object' &&
-		(typeof value.evaluate === 'function' ||
-		 typeof value.asElement === 'function' ||
-		 typeof value.dispose === 'function' ||  // APIRequestContext has dispose
-		 typeof value.fetch === 'function' ||    // APIRequestContext has fetch
-		 value.constructor?.name?.includes('Handle') ||
-		 value.constructor?.name?.includes('Context'));
+function needsHandle(value: any, visited = new Set<any>()): boolean {
+	// Top-level functions should throw an error - they can't be serialized or stored as handles
+	// Nested functions (inside objects/arrays) mean the container needs to be a handle
+	if (typeof value === 'function') {
+		if (visited.size === 0) {
+			throw new Error('Attempting to serialize unexpected value: function');
+		}
+		return true;
+	}
+
+	// Primitives and simple values can be serialized
+	if (typeof value === 'symbol') return false;
+	if (Object.is(value, undefined)) return false;
+	if (Object.is(value, null)) return false;
+	if (Object.is(value, NaN)) return false;
+	if (Object.is(value, Infinity)) return false;
+	if (Object.is(value, -Infinity)) return false;
+	if (Object.is(value, -0)) return false;
+	if (typeof value === 'boolean') return false;
+	if (typeof value === 'number') return false;
+	if (typeof value === 'string') return false;
+	if (typeof value === 'bigint') return false;
+
+	// Serializable built-in types
+	if (value instanceof Error) return false;
+	if (value instanceof Date) return false;
+	if (value instanceof RegExp) return false;
+	if (typeof URL !== 'undefined' && value instanceof URL) return false;
+
+	// Buffers and typed arrays are serializable
+	if (Buffer.isBuffer(value)) return false;
+	if (ArrayBuffer.isView(value)) return false;
+
+	// Avoid infinite recursion on circular references
+	if (visited.has(value)) return false;
+	visited.add(value);
+
+	// Arrays can be serialized but the caller needs to convert the contents
+	if (Array.isArray(value)) {
+		return false;
+	}
+
+	// Objects: check their properties recursively
+	// If any property contains a function or other non-serializable value, this object needs a handle
+	if (typeof value === 'object') {
+		for (const key of Object.keys(value)) {
+			if (needsHandle(value[key], visited)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	// Fallback: anything else needs to be stored as a handle
+	return true;
 }
 
 /**
@@ -101,7 +149,7 @@ function serializeResult(data: unknown, registry: HandleRegistry): unknown {
 	}
 
 	// If it's a handle, register it and return a handle reference
-	if (isHandle(data)) {
+	if (needsHandle(data)) {
 		const handleId = registry.register(data);
 		const handleRef: HandleReference = { __handleId: handleId };
 		return handleRef;
