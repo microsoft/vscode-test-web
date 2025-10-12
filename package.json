@@ -22,8 +22,10 @@
   "exports": {
     ".": "./out/server/index.js",
     "./playwright": {
-      "types": "./out/test-helpers/playwright.d.ts",
-      "default": "./out/test-helpers/playwright.js"
+      "types": "./out/test-helpers/esm/playwright.d.ts",
+      "import": "./out/test-helpers/esm/playwright.js",
+      "require": "./out/test-helpers/amd/playwright.js",
+      "default": "./out/test-helpers/esm/playwright.js"
     }
   },
   "engines": {

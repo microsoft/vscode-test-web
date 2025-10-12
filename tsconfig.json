@@ -15,7 +15,10 @@
             "path": "./src/browser/tsconfig-amd.json"
         },
         {
-            "path": "./src/test-helpers/tsconfig.json"
+            "path": "./src/test-helpers/tsconfig-esm.json"
+        },
+        {
+            "path": "./src/test-helpers/tsconfig-amd.json"
         }
     ]
 }

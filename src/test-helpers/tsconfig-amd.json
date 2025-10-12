@@ -1,12 +1,12 @@
 {
 	"compilerOptions": {
-		"target": "ES2020",
-		"module": "commonjs",
+		"target": "ES2022",
+		"module": "AMD",
 		"lib": [
-			"ES2020",
-			"WebWorker"
+			"ES2022",
+			"DOM",
 		],
-		"outDir": "../../out/test-helpers",
+		"outDir": "../../out/test-helpers/amd",
 		"declaration": true,
 		"strict": true,
 		"noImplicitAny": false,
@@ -15,12 +15,11 @@
 		"alwaysStrict": true,
 		"skipLibCheck": true,
 		"forceConsistentCasingInFileNames": true,
-		"sourceMap": true,
+		"sourceMap": false,
 		"newLine": "lf",
-		"removeComments": false,
-		"composite": true
-	},
-	"include": [
-		"*.ts"
-	]
+		"removeComments": true,
+		"moduleResolution": "node",
+		"resolveJsonModule": true,
+		"esModuleInterop": true
+	}
 }
