@@ -26,19 +26,29 @@
  *   await page.keyboard.type('Hello');
  *   await page.keyboard.press('Enter');
  * });
+ *
+ * test('Make API requests', async ({ request }) => {
+ *   const response = await request.get('https://api.example.com/data');
+ *   assert.ok(response.ok());
+ * });
+ *
+ * test('Use context', async ({ context }) => {
+ *   await context.grantPermissions(['clipboard-read']);
+ * });
  * ```
  *
  * ## Available Fixtures
  *
  * - `page`: Playwright Page instance for interacting with VS Code workbench
- * - `browser`: Playwright Browser instance (shared across tests)
- * - `context`: Browser context (if added to server-side context in future)
+ * - `context`: Playwright BrowserContext instance for context-level operations
+ * - `request`: Playwright APIRequestContext instance for making HTTP API requests
  *
  * All fixtures are dynamically proxied - any fixture property available on the
  * server-side context object will be accessible in tests.
  */
 
-import type { Page, Browser, ElementHandle } from 'playwright';
+import type { ElementHandle } from 'playwright';
+import type { PlaywrightTestArgs } from '@playwright/test';
 import type {
 	PlaywrightResult,
 	PlaywrightMessage,
@@ -233,35 +243,10 @@ function createDynamicProxy(target: string): any {
 }
 
 /**
- * Playwright Test Fixtures interface.
- *
- * This interface defines the fixtures available in test functions.
- * Fixtures are dynamically resolved from the server-side context.
- */
-export interface PlaywrightFixtures {
-	/**
-	 * Playwright Page instance for interacting with the VS Code workbench.
-	 * @see https://playwright.dev/docs/api/class-page
-	 */
-	page: Page;
-
-	/**
-	 * Playwright Browser instance (shared across tests in same worker).
-	 * @see https://playwright.dev/docs/api/class-browser
-	 */
-	browser: Browser;
-
-	// Future fixtures can be added here as they're added to server context:
-	// context?: BrowserContext;
-	// browserName?: 'chromium' | 'firefox' | 'webkit';
-	// request?: APIRequestContext;
-}
-
-/**
  * Create a fixtures proxy that dynamically resolves fixture properties
  * from the server-side context object.
  */
-function createFixturesProxy(): PlaywrightFixtures {
+function createFixturesProxy(): PlaywrightTestArgs {
 	const cache = new Map<string | symbol, any>();
 
 	const handler: ProxyHandler<any> = {
@@ -271,7 +256,7 @@ function createFixturesProxy(): PlaywrightFixtures {
 				return undefined;
 			}
 			if (prop === Symbol.toStringTag) {
-				return 'PlaywrightFixtures';
+				return 'PlaywrightTestArgs';
 			}
 
 			// Check cache first to maintain identity
@@ -286,7 +271,7 @@ function createFixturesProxy(): PlaywrightFixtures {
 		}
 	};
 
-	return new Proxy({}, handler) as PlaywrightFixtures;
+	return new Proxy({}, handler) as PlaywrightTestArgs;
 }
 
 // Install a root-level beforeEach to clear server registry between tests (opaque to users)
@@ -447,7 +432,7 @@ try {
  * });
  * ```
  */
-export function test(name: string, testFn: (fixtures: PlaywrightFixtures) => Promise<void>): void {
+export function test(name: string, testFn: (fixtures: PlaywrightTestArgs) => Promise<void>): void {
 	const mochaTest = (globalThis as any).test;
 	if (!mochaTest) {
 		throw new Error('Mocha test function not found. Make sure this is running in a Mocha test environment.');

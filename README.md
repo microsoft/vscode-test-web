@@ -6,7 +6,6 @@ This module helps testing VS Code web extensions locally.
 [![npm Package](https://img.shields.io/npm/v/@vscode/test-web.svg?style=flat-square)](https://www.npmjs.org/package/@vscode/test-web)
 [![NPM Downloads](https://img.shields.io/npm/dm/@vscode/test-web.svg)](https://npmjs.org/package/@vscode/test-web)
 
-
 See the [web extensions guide](https://code.visualstudio.com/api/extension-guides/web-extensions) to learn about web extensions.
 
 The node module runs a local web server that serves VS Code in the browser including the extension under development. Additionally the extension tests are automatically run.
@@ -73,41 +72,85 @@ go()
 
 ### Using Playwright for UI Testing
 
-Extension tests can access Playwright's full API capabilities for DOM queries, screenshots, and UI interactions:
+Extension tests can use Playwright's full API via fixtures for DOM queries, screenshots, and UI interactions:
 
 ```ts
-import * as playwright from '@vscode/test-web/playwright';
+import { test } from '@vscode/test-web/playwright';
+import * as assert from 'assert';
 
-test('Verify editor is visible', async () => {
-  const isVisible = await playwright.isVisible('.monaco-editor');
-  assert.ok(isVisible, 'Editor should be visible');
+test('Verify editor is visible', async ({ page }) => {
+  const element = await page.$('.monaco-editor');
+  assert.ok(element, 'Editor should be visible');
 });
 
-test('Take screenshot', async () => {
-  const screenshot = await playwright.screenshot({ type: 'png', fullPage: false });
-  // screenshot is a base64-encoded PNG string
+test('Take screenshot', async ({ page }) => {
+  await page.screenshot({ path: 'screenshot.png' });
 });
 
-test('Query DOM elements', async () => {
-  const divCount = await playwright.querySelectorAll('div');
-  const title = await playwright.evaluate('() => document.title');
-  const hasWorkbench = await playwright.querySelector('.monaco-workbench');
+test('Query DOM elements', async ({ page }) => {
+  const divs = await page.$$('div');
+  const title = await page.evaluate(() => document.title);
+  const workbench = await page.$('.monaco-workbench');
+});
+
+test('Use keyboard', async ({ page }) => {
+  await page.keyboard.type('Hello');
+  await page.keyboard.press('Enter');
+});
+
+test('Make API requests', async ({ request }) => {
+  const response = await request.get('https://api.example.com/data');
+  const data = await response.json();
+  assert.ok(response.ok());
+});
+
+test('Use context', async ({ context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  const cookies = await context.cookies();
 });
 ```
 
-Available Playwright operations:
+#### Available Fixtures
 
-- `screenshot(options)` - Take screenshots (returns base64 PNG)
-- `waitForSelector(selector, options)` - Wait for element to appear
-- `querySelector(selector)` - Check if element exists
-- `querySelectorAll(selector)` - Count matching elements
-- `isVisible(selector)` / `isHidden(selector)` - Check visibility
-- `click(selector, options)` - Click elements
-- `fill(selector, value, options)` - Fill input fields
-- `textContent(selector)` - Get element text
-- `getAttribute(selector, name)` - Get element attributes
-- `evaluate(script, arg)` - Execute JavaScript in page context
-- `keyboard.press(key)` / `keyboard.type(text)` - Keyboard interactions
+Tests receive Playwright fixtures as parameters, following the `@playwright/test` pattern:
+
+- **`page`**: Playwright [Page](https://playwright.dev/docs/api/class-page) instance for interacting with VS Code workbench
+  - All standard Page methods: `$()`, `$$()`, `click()`, `fill()`, `screenshot()`, `waitForSelector()`, etc.
+  - Nested objects: `keyboard`, `mouse`, `touchscreen`
+  - Navigation: `goto()`, `reload()`, `goBack()`, `goForward()`
+  - Evaluation: `evaluate()`, `evaluateHandle()`
+  - Screenshots: `screenshot()`
+
+- **`context`**: Playwright [BrowserContext](https://playwright.dev/docs/api/class-browsercontext) instance
+  - Methods: `newPage()`, `cookies()`, `addCookies()`, `clearCookies()`, `grantPermissions()`, `setGeolocation()`
+  - Context-level operations and state management
+
+- **`request`**: Playwright [APIRequestContext](https://playwright.dev/docs/api/class-apirequestcontext) instance
+  - Methods: `get()`, `post()`, `put()`, `delete()`, `fetch()`, `head()`, `patch()`
+  - Make HTTP API requests from tests
+
+All fixtures are dynamically proxied - any fixture property available on the server-side context object will be accessible in tests.
+
+#### Registry Management (Advanced)
+
+For diagnostic purposes and advanced scenarios, use the `playwrightRegistry` export:
+
+```ts
+import { test, playwrightRegistry } from '@vscode/test-web/playwright';
+
+test('diagnostic test', async ({ page }) => {
+  const sizeBefore = await playwrightRegistry.getSize();
+  const element = await page.$('.selector');
+  const sizeAfter = await playwrightRegistry.getSize();
+  assert.strictEqual(sizeAfter, sizeBefore + 1);
+});
+
+test('persist handles across tests', async ({ page }) => {
+  playwrightRegistry.disableAutoClear();
+  // handles will persist...
+  playwrightRegistry.enableAutoClear(); // restore default
+});
+```
 
 See `sample/src/web/test/suite/playwright.test.ts` for complete examples.
 
