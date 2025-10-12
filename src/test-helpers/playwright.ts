@@ -4,28 +4,41 @@
  *--------------------------------------------------------------------------------------------*/
 
 /**
- * Playwright API bridge for extension tests.
+ * Playwright Test integration for @vscode/test-web.
  *
- * This module provides access to Playwright capabilities from within extension tests
- * running in a Web Worker context. It communicates with the main page via BroadcastChannel.
+ * This module provides @playwright/test-style fixtures for extension tests running
+ * in a Web Worker context. It communicates with the main page via BroadcastChannel
+ * to access server-side Playwright instances.
  *
- * @example
+ * ## Usage Pattern
+ *
+ * Use the `test` function to define tests with fixtures:
+ *
  * ```typescript
- * import * as playwright from '@vscode/test-web/playwright';
+ * import { test } from '@vscode/test-web/playwright';
  *
- * test('UI element is visible', async () => {
- *   const isVisible = await playwright.isVisible('.monaco-editor');
- *   assert.ok(isVisible, 'Editor should be visible');
+ * test('UI element is visible', async ({ page }) => {
+ *   const element = await page.$('.monaco-editor');
+ *   assert.ok(element, 'Editor should be present');
  * });
  *
- * test('Take screenshot', async () => {
- *   const screenshot = await playwright.screenshot({ path: 'test.png' });
- *   // screenshot is base64 encoded PNG
+ * test('Use keyboard', async ({ page }) => {
+ *   await page.keyboard.type('Hello');
+ *   await page.keyboard.press('Enter');
  * });
  * ```
+ *
+ * ## Available Fixtures
+ *
+ * - `page`: Playwright Page instance for interacting with VS Code workbench
+ * - `browser`: Playwright Browser instance (shared across tests)
+ * - `context`: Browser context (if added to server-side context in future)
+ *
+ * All fixtures are dynamically proxied - any fixture property available on the
+ * server-side context object will be accessible in tests.
  */
 
-import type { Page, ElementHandle } from 'playwright';
+import type { Page, Browser, ElementHandle } from 'playwright';
 import type {
 	PlaywrightResult,
 	PlaywrightMessage,
@@ -220,74 +233,60 @@ function createDynamicProxy(target: string): any {
 }
 
 /**
- * The main page object that provides access to all Playwright Page APIs
- * Use this to access any Playwright Page method dynamically
+ * Playwright Test Fixtures interface.
  *
- * All properties and methods are resolved at runtime, making this 100% forward-compatible
- * with any future Playwright API additions. Works recursively for nested objects like
- * keyboard, mouse, touchscreen, request, etc.
- *
- * @example
- * ```typescript
- * import { page } from '@vscode/test-web/playwright';
- *
- * // Query elements
- * const elements = await page.$$('.selector');
- * const element = await page.$('.selector');
- *
- * // Interact with page
- * await page.click('.button');
- * await page.fill('input', 'text');
- *
- * // Use keyboard (dynamically proxied)
- * await page.keyboard.press('Enter');
- *
- * // Use any nested API (dynamically proxied)
- * await page.mouse.click(100, 200);
- * await page.touchscreen.tap(100, 200);
- *
- * // Take screenshot
- * const screenshot = await page.screenshot({ fullPage: true });
- * ```
+ * This interface defines the fixtures available in test functions.
+ * Fixtures are dynamically resolved from the server-side context.
  */
-export const page: Page = createDynamicProxy('page') as Page;
+export interface PlaywrightFixtures {
+	/**
+	 * Playwright Page instance for interacting with the VS Code workbench.
+	 * @see https://playwright.dev/docs/api/class-page
+	 */
+	page: Page;
 
-/**
- * Get the current number of active Playwright handle entries stored on the server.
- *
- * Each ElementHandle / Locator (and any other non‑serializable Playwright object the
- * bridge returns) is stored server‑side with a generated `handle_<n>` id. The size
- * reported here reflects how many such entries are presently retained.
- *
- * Default behavior (with auto clear enabled) is that this returns 0 at the start of
- * every test. It will grow as you obtain new element/locator handles inside a test.
- *
- * Use cases:
- * - Diagnostics in tests (e.g. ensuring you are not leaking handles when auto clear is disabled)
- * - Asserting expected handle creation in framework / integration tests.
- *
- * NOTE: If you have disabled auto clearing via {@link disableAutoClearRegistry}, the
- * value can grow across tests until you manually call {@link clearRegistry}.
- */
-export async function __getRegistrySize(): Promise<number> {
-	const result = await sendPlaywrightMessage('__registry', 'size');
-	return checkResult<number>(result);
+	/**
+	 * Playwright Browser instance (shared across tests in same worker).
+	 * @see https://playwright.dev/docs/api/class-browser
+	 */
+	browser: Browser;
+
+	// Future fixtures can be added here as they're added to server context:
+	// context?: BrowserContext;
+	// browserName?: 'chromium' | 'firefox' | 'webkit';
+	// request?: APIRequestContext;
 }
 
 /**
- * Clear (dispose) all server-side Playwright handles currently registered.
- *
- * This is invoked automatically before each test when auto clear is enabled
- * (the default). You can call it manually when auto clear is disabled to
- * reclaim memory and ensure stale handle ids are invalidated.
- *
- * After calling this, any previously obtained handle proxies will cease to
- * function (future method calls will fail with a not-found error that includes
- * guidance about auto clearing).
+ * Create a fixtures proxy that dynamically resolves fixture properties
+ * from the server-side context object.
  */
-export async function clearRegistry(): Promise<void> {
-	const result = await sendPlaywrightMessage('__registry', 'clear');
-	checkResult<boolean>(result);
+function createFixturesProxy(): PlaywrightFixtures {
+	const cache = new Map<string | symbol, any>();
+
+	const handler: ProxyHandler<any> = {
+		get(_target, prop) {
+			// Handle special properties
+			if (prop === 'then') {
+				return undefined;
+			}
+			if (prop === Symbol.toStringTag) {
+				return 'PlaywrightFixtures';
+			}
+
+			// Check cache first to maintain identity
+			if (cache.has(prop)) {
+				return cache.get(prop);
+			}
+
+			// Create dynamic proxy for this fixture (e.g., 'page', 'browser')
+			const fixtureProxy = createDynamicProxy(prop as string);
+			cache.set(prop, fixtureProxy);
+			return fixtureProxy;
+		}
+	};
+
+	return new Proxy({}, handler) as PlaywrightFixtures;
 }
 
 // Install a root-level beforeEach to clear server registry between tests (opaque to users)
@@ -297,23 +296,117 @@ export async function clearRegistry(): Promise<void> {
 let __autoClearRegistry = true;
 
 /**
- * Disable the automatic clearing of the server-side Playwright handle registry
- * that normally runs before each test (root-level Mocha beforeEach).
- *
- * Use this when you intentionally want to keep handles (e.g. element / locator proxies)
- * alive across multiple tests. Be aware that disabling this may allow the registry
- * to grow unbounded if you keep creating new handles without manual cleanup.
- *
- * Re‑enable with {@link enableAutoClearRegistry} when done to restore default isolation.
+ * Internal function to get registry size.
  */
-export function disableAutoClearRegistry(): void { __autoClearRegistry = false; }
+async function __getRegistrySize(): Promise<number> {
+	const result = await sendPlaywrightMessage('__registry', 'size');
+	return checkResult<number>(result);
+}
 
 /**
- * Re‑enable the default behavior of clearing the server-side handle registry
- * before each test. This provides test isolation and prevents stale handle
- * references from leaking across tests.
+ * Internal function to clear registry.
  */
-export function enableAutoClearRegistry(): void { __autoClearRegistry = true; }
+async function clearRegistry(): Promise<void> {
+	const result = await sendPlaywrightMessage('__registry', 'clear');
+	checkResult<boolean>(result);
+}
+
+/**
+ * Internal function to disable auto clear.
+ */
+function disableAutoClearRegistry(): void {
+	__autoClearRegistry = false;
+}
+
+/**
+ * Internal function to enable auto clear.
+ */
+function enableAutoClearRegistry(): void {
+	__autoClearRegistry = true;
+}
+
+/**
+ * Registry management API for diagnostics and testing.
+ *
+ * This object provides internal APIs for managing the server-side handle registry.
+ * These are primarily useful for:
+ * - Framework/integration testing
+ * - Debugging handle leaks
+ * - Advanced test scenarios requiring cross-test handle persistence
+ *
+ * **Note**: These are internal diagnostic APIs and not part of the standard Playwright
+ * Test fixtures. Most users will never need to use these functions.
+ *
+ * @example
+ * ```typescript
+ * import { test, playwrightRegistry } from '@vscode/test-web/playwright';
+ *
+ * test('diagnostic test', async ({ page }) => {
+ *   const sizeBefore = await playwrightRegistry.getSize();
+ *   const element = await page.$('.selector');
+ *   const sizeAfter = await playwrightRegistry.getSize();
+ *   assert.strictEqual(sizeAfter, sizeBefore + 1);
+ * });
+ *
+ * test('persist handles across tests', async ({ page }) => {
+ *   playwrightRegistry.disableAutoClear();
+ *   // handles will persist...
+ *   playwrightRegistry.enableAutoClear(); // restore default
+ * });
+ * ```
+ */
+export const playwrightRegistry = {
+	/**
+	 * Get the current number of active Playwright handle entries stored on the server.
+	 *
+	 * Each ElementHandle / Locator (and any other non‑serializable Playwright object the
+	 * bridge returns) is stored server‑side with a generated `handle_<n>` id. The size
+	 * reported here reflects how many such entries are presently retained.
+	 *
+	 * Default behavior (with auto clear enabled) is that this returns 0 at the start of
+	 * every test. It will grow as you obtain new element/locator handles inside a test.
+	 *
+	 * Use cases:
+	 * - Diagnostics in tests (e.g. ensuring you are not leaking handles when auto clear is disabled)
+	 * - Asserting expected handle creation in framework / integration tests.
+	 *
+	 * NOTE: If you have disabled auto clearing via {@link disableAutoClear}, the
+	 * value can grow across tests until you manually call {@link clear}.
+	 */
+	getSize: __getRegistrySize,
+
+	/**
+	 * Clear (dispose) all server-side Playwright handles currently registered.
+	 *
+	 * This is invoked automatically before each test when auto clear is enabled
+	 * (the default). You can call it manually when auto clear is disabled to
+	 * reclaim memory and ensure stale handle ids are invalidated.
+	 *
+	 * After calling this, any previously obtained handle proxies will cease to
+	 * function (future method calls will fail with a not-found error that includes
+	 * guidance about auto clearing).
+	 */
+	clear: clearRegistry,
+
+	/**
+	 * Disable the automatic clearing of the server-side Playwright handle registry
+	 * that normally runs before each test (root-level Mocha beforeEach).
+	 *
+	 * Use this when you intentionally want to keep handles (e.g. element / locator proxies)
+	 * alive across multiple tests. Be aware that disabling this may allow the registry
+	 * to grow unbounded if you keep creating new handles without manual cleanup.
+	 *
+	 * Re‑enable with {@link enableAutoClear} when done to restore default isolation.
+	 */
+	disableAutoClear: disableAutoClearRegistry,
+
+	/**
+	 * Re‑enable the default behavior of clearing the server-side handle registry
+	 * before each test. This provides test isolation and prevents stale handle
+	 * references from leaking across tests.
+	 */
+	enableAutoClear: enableAutoClearRegistry,
+};
 
 try {
 	const mochaGlobal: any = (globalThis as any).mocha;
@@ -328,3 +421,87 @@ try {
 } catch {
 	// Ignore errors if mocha not initialized yet
 }
+
+/**
+ * Define a test with Playwright fixtures.
+ *
+ * This function wraps Mocha's `test` function to provide @playwright/test-style
+ * fixtures. Fixtures are provided as an object parameter to the test function.
+ *
+ * @param name - Test name
+ * @param testFn - Test function that receives fixtures as parameter
+ *
+ * @example
+ * ```typescript
+ * import { test } from '@vscode/test-web/playwright';
+ * import * as assert from 'assert';
+ *
+ * test('can interact with page', async ({ page }) => {
+ *   const element = await page.$('.monaco-editor');
+ *   assert.ok(element, 'Editor should be present');
+ * });
+ *
+ * test('can use multiple fixtures', async ({ page, browser }) => {
+ *   const version = await browser.version();
+ *   await page.screenshot({ path: 'screenshot.png' });
+ * });
+ * ```
+ */
+export function test(name: string, testFn: (fixtures: PlaywrightFixtures) => Promise<void>): void {
+	const mochaTest = (globalThis as any).test;
+	if (!mochaTest) {
+		throw new Error('Mocha test function not found. Make sure this is running in a Mocha test environment.');
+	}
+
+	mochaTest(name, async function (this: any) {
+		const fixtures = createFixturesProxy();
+		await testFn.call(this, fixtures);
+	});
+}
+
+/**
+ * Define a test suite with Playwright fixtures.
+ *
+ * This is a convenience wrapper around Mocha's `suite` function.
+ *
+ * @param name - Suite name
+ * @param suiteFn - Suite function
+ */
+export function suite(name: string, suiteFn: () => void): void {
+	const mochaSuite = (globalThis as any).suite;
+	if (!mochaSuite) {
+		throw new Error('Mocha suite function not found. Make sure this is running in a Mocha test environment.');
+	}
+	mochaSuite(name, suiteFn);
+}
+
+/**
+ * Default export for backward compatibility.
+ *
+ * **DEPRECATED**: This export is deprecated and will be removed in a future version.
+ * Use the `test` function with fixtures instead.
+ *
+ * @deprecated Use `import { test } from '@vscode/test-web/playwright'` and access
+ * fixtures through the test function parameter: `test('name', async ({ page }) => { })`
+ *
+ * @example
+ * ```typescript
+ * // OLD (deprecated):
+ * import playwright from '@vscode/test-web/playwright';
+ * test('test', async () => {
+ *   await playwright.page.$('.selector');
+ * });
+ *
+ * // NEW (recommended):
+ * import { test } from '@vscode/test-web/playwright';
+ * test('test', async ({ page }) => {
+ *   await page.$('.selector');
+ * });
+ * ```
+ */
+const legacyFixtures = {
+	page: createDynamicProxy('page') as Page,
+	browser: createDynamicProxy('browser') as Browser,
+};
+
+export default legacyFixtures;

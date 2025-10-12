@@ -194,7 +194,9 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 	return new Promise(async (s, e) => {
 		const endpoint = `http://${host}:${port}`;
 
-		const configPage = async (page: playwright.Page, browser: playwright.Browser) => {
+		let request: playwright.APIRequestContext | undefined;
+
+		const configPage = async (page: playwright.Page, browser: playwright.Browser, context: playwright.BrowserContext) => {
 			type Severity = 'error' | 'warning' | 'info';
 			const unreportedOutput: { type: Severity; args: unknown[] }[] = [];
 			await page.exposeFunction('codeAutomationLog', (type: Severity, args: unknown[]) => {
@@ -219,8 +221,9 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 				}
 			});
 
-			// Set up Playwright API bridge
-			setupPlaywrightBridge(page, browser);
+			request = await playwright.request.newContext();
+
+			setupPlaywrightBridge({ page, context, request });
 
 			// Inject client-side bridge code into the page
 			const bridgeClientCode = await getPlaywrightBridgeClientCode();
@@ -229,8 +232,12 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 		console.log(`Opening browser on ${endpoint}...`);
 		const context = await openBrowser(endpoint, options, configPage);
 		if (context) {
-			context.once('close', () => server.close());
+			context.once('close', () => {
+				if (request) request.dispose();
+				server.close();
+			});
 		} else {
+			if (request) request.dispose();
 			server.close();
 			e(new Error('Can not run test as opening of browser failed.'));
 		}
@@ -280,7 +287,7 @@ export async function open(options: Options): Promise<Disposable> {
 	};
 }
 
-async function openBrowser(endpoint: string, options: Options, configPage?: (page: playwright.Page, browser: playwright.Browser) => Promise<void>): Promise<playwright.BrowserContext | undefined> {
+async function openBrowser(endpoint: string, options: Options, configPage?: (page: playwright.Page, browser: playwright.Browser, context: playwright.BrowserContext) => Promise<void>): Promise<playwright.BrowserContext | undefined> {
 	if (options.browserType === 'none') {
 		return undefined;
 	}
@@ -327,7 +334,7 @@ async function openBrowser(endpoint: string, options: Options, configPage?: (pag
 
 	const page = context.pages()[0] ?? (await context.newPage());
 	if (configPage) {
-		await configPage(page, browser);
+		await configPage(page, browser, context);
 	}
 	if (options.waitForDebugger) {
 		await page.waitForFunction(() => '__jsDebugIsReady' in globalThis);

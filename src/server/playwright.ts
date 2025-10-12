@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as playwright from 'playwright';
+import type { PlaywrightTestArgs } from '@playwright/test';
 import { readFileInRepo } from './download';
 import type {
 	PlaywrightResult,
@@ -151,15 +151,15 @@ function deserializeArgs(args: unknown[], registry: HandleRegistry): unknown[] {
 /**
  * Sets up the Playwright bridge by exposing functions that can be called from the browser
  */
-export function setupPlaywrightBridge(page: playwright.Page, browser: playwright.Browser): void {
-	// Create a context object with available APIs
-	const context = { page, browser };
+export function setupPlaywrightBridge(fixtures: PlaywrightTestArgs): void {
+	// Use the fixtures object directly as the context for the bridge
+	const context = fixtures;
 
 	// Create a handle registry for storing ElementHandles and other non-serializable objects
 	const registry = new HandleRegistry();
 
 	// Expose a function that handles all Playwright API calls dynamically
-	page.exposeFunction('__playwrightBridge', async (message: PlaywrightMessage): Promise<PlaywrightResult> => {
+	fixtures.page.exposeFunction('__playwrightBridge', async (message: PlaywrightMessage): Promise<PlaywrightResult> => {
 		try {
 			// Validate message format
 			if (!message || typeof message !== 'object') {
