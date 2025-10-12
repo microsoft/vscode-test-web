@@ -110,7 +110,6 @@ import type {
 let requestId = 0;
 
 // Initialize BroadcastChannel for communication with main page
-// @ts-ignore - BroadcastChannel is available in worker context
 const channel = new BroadcastChannel('playwright-bridge');
 
 /**
@@ -330,36 +329,6 @@ function createFixturesProxy(): PlaywrightTestArgs {
 let __autoClearRegistry = true;
 
 /**
- * Internal function to get registry size.
- */
-async function __getRegistrySize(): Promise<number> {
-	const result = await sendPlaywrightMessage('__registry', 'size');
-	return checkResult<number>(result);
-}
-
-/**
- * Internal function to clear registry.
- */
-async function clearRegistry(): Promise<void> {
-	const result = await sendPlaywrightMessage('__registry', 'clear');
-	checkResult<boolean>(result);
-}
-
-/**
- * Internal function to disable auto clear.
- */
-function disableAutoClearRegistry(): void {
-	__autoClearRegistry = false;
-}
-
-/**
- * Internal function to enable auto clear.
- */
-function enableAutoClearRegistry(): void {
-	__autoClearRegistry = true;
-}
-
-/**
  * Registry management API for diagnostics and testing.
  *
  * This object provides internal APIs for managing the server-side handle registry.
@@ -407,7 +376,10 @@ export const playwrightRegistry = {
 	 * NOTE: If you have disabled auto clearing via {@link disableAutoClear}, the
 	 * value can grow across tests until you manually call {@link clear}.
 	 */
-	getSize: __getRegistrySize,
+	async getSize(): Promise<number> {
+		const result = await sendPlaywrightMessage('__registry', 'size');
+		return checkResult<number>(result);
+	},
 
 	/**
 	 * Clear (dispose) all server-side Playwright handles currently registered.
@@ -420,7 +392,10 @@ export const playwrightRegistry = {
 	 * function (future method calls will fail with a not-found error that includes
 	 * guidance about auto clearing).
 	 */
-	clear: clearRegistry,
+	async clear(): Promise<void> {
+		const result = await sendPlaywrightMessage('__registry', 'clear');
+		checkResult<boolean>(result);
+	},
 
 	/**
 	 * Disable the automatic clearing of the server-side Playwright handle registry
@@ -432,14 +407,18 @@ export const playwrightRegistry = {
 	 *
 	 * Re‑enable with {@link enableAutoClear} when done to restore default isolation.
 	 */
-	disableAutoClear: disableAutoClearRegistry,
+	disableAutoClear(): void {
+		__autoClearRegistry = false;
+	},
 
 	/**
 	 * Re‑enable the default behavior of clearing the server-side handle registry
 	 * before each test. This provides test isolation and prevents stale handle
 	 * references from leaking across tests.
 	 */
-	enableAutoClear: enableAutoClearRegistry,
+	enableAutoClear(): void {
+		__autoClearRegistry = true;
+	},
 };
 
 try {
@@ -447,7 +426,7 @@ try {
 	if (mochaGlobal?.suite && !mochaGlobal.__playwrightRegistryHookInstalled) {
 		mochaGlobal.suite.beforeEach(function () {
 			if (__autoClearRegistry) {
-				return clearRegistry();
+				return playwrightRegistry.clear();
 			}
 		});
 		mochaGlobal.__playwrightRegistryHookInstalled = true;
