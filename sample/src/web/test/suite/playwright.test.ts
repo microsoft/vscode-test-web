@@ -42,48 +42,9 @@ suite('Playwright UI Test Suite', () => {
 		assert.ok(files.length > 0, 'Should have test files');
 		await vscode.window.showTextDocument(files[0]);
 
-		// Wait for the editor to be loaded with debug capture on failure
-		try {
-			const editorFound = await page.waitForSelector('.monaco-editor', { timeout: 10000, state: 'visible' });
-			assert.ok(editorFound, 'Monaco editor should be present');
-		} catch (error) {
-			// Capture debugging information on failure
-			console.error('[DEBUG] Monaco editor test failed, capturing debug info...');
-
-			// Take a screenshot
-			try {
-				const screenshot = await page.screenshot({ type: 'png', fullPage: true });
-				console.error('[DEBUG] Screenshot captured (base64 length:', screenshot.length, ')');
-			} catch (screenshotError) {
-				console.error('[DEBUG] Failed to capture screenshot:', screenshotError);
-			}
-
-			// Get page content
-			try {
-				const html = await page.evaluate('() => document.documentElement.outerHTML');
-				console.error('[DEBUG] Page HTML length:', (html as string).length);
-				console.error('[DEBUG] Page HTML preview:', (html as string).substring(0, 500));
-			} catch (htmlError) {
-				console.error('[DEBUG] Failed to get HTML:', htmlError);
-			}
-
-			// Check what elements are present
-			try {
-				const bodyClasses = await page.evaluate('() => document.body.className');
-				console.error('[DEBUG] Body classes:', bodyClasses);
-
-				const workbenchFound = await page.$('.monaco-workbench');
-				console.error('[DEBUG] Workbench found:', workbenchFound);
-
-				const divCount = await page.$$('div');
-				console.error('[DEBUG] Total divs:', divCount.length);
-			} catch (debugError) {
-				console.error('[DEBUG] Failed to gather element info:', debugError);
-			}
-
-			// Re-throw the original error
-			throw error;
-		}
+		// Wait for the editor to be loaded
+		const editorFound = await page.waitForSelector('.monaco-editor', { timeout: 10000, state: 'visible' });
+		assert.ok(editorFound, 'Monaco editor should be present');
 	});
 
 	test('page.waitForTimeout()', async ({ page }) => {
