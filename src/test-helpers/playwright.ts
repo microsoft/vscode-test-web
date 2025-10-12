@@ -49,10 +49,51 @@
  * - `page`: Playwright Page instance for interacting with VS Code workbench
  * - `context`: Playwright BrowserContext instance for context-level operations
  * - `request`: Playwright APIRequestContext instance for making HTTP API requests
- * - `playwright`: Playwright library object for creating new contexts and accessing browser types
  *
  * All fixtures are dynamically proxied - any fixture property available on the
  * server-side context object will be accessible in tests.
+ *
+ * ## Playwright Library Access
+ *
+ * Import the `playwright` export to access the full Playwright library:
+ *
+ * ```typescript
+ * import { playwright } from '@vscode/test-web/playwright';
+ *
+ * const request = await playwright.request.newContext();
+ * ```
+ *
+ * This provides access to:
+ * - `playwright.request.newContext()` - Create new API request contexts
+ * - `playwright.chromium`, `playwright.firefox`, `playwright.webkit` - Browser types
+ * - Other Playwright library APIs
+ *
+ * ## Registry Management (Advanced)
+ *
+ * For diagnostic purposes and advanced scenarios, use the `playwrightRegistry` export:
+ *
+ * ```typescript
+ * import { playwrightRegistry } from '@vscode/test-web/playwright';
+ *
+ * test('diagnostic test', async ({ page }) => {
+ *   const sizeBefore = await playwrightRegistry.getSize();
+ *   const element = await page.$('.selector');
+ *   const sizeAfter = await playwrightRegistry.getSize();
+ *   assert.strictEqual(sizeAfter, sizeBefore + 1);
+ * });
+ *
+ * test('persist handles across tests', async ({ page }) => {
+ *   playwrightRegistry.disableAutoClear();
+ *   // handles will persist...
+ *   playwrightRegistry.enableAutoClear(); // restore default
+ * });
+ * ```
+ *
+ * The registry provides:
+ * - `getSize()` - Get the current number of active Playwright handles
+ * - `clear()` - Clear all registered handles
+ * - `disableAutoClear()` - Disable automatic registry clearing between tests
+ * - `enableAutoClear()` - Re-enable automatic registry clearing (default)
  */
 
 import type { ElementHandle } from 'playwright';
