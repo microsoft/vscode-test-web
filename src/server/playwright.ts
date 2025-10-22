@@ -190,7 +190,6 @@ function deserializeArgs(args: unknown[], registry: HandleRegistry): unknown[] {
 		// Check if it's a serialized function
 		if (isSerializedFunction(arg)) {
 			// Convert the function string back to a function
-			// eslint-disable-next-line no-new-func
 			return new Function(`return (${arg.__function})`)();
 		}
 		// If it's an array, deserialize recursively

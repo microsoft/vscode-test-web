@@ -144,6 +144,7 @@ function sendPlaywrightMessage(target: string, method: string, args: unknown[] =
 	return new Promise((resolve, reject) => {
 		const id = ++requestId;
 
+		// eslint-disable-next-line prefer-const
 		let handler: (event: MessageEvent) => void;
 
 		const timeout = setTimeout(() => {
