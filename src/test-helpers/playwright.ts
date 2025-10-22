@@ -512,4 +512,4 @@ export function suite(name: string, suiteFn: () => void): void {
  * });
  * ```
  */
-export const playwright = createDynamicProxy('playwright');
+export const playwright: typeof import('playwright') = createDynamicProxy('playwright');
