@@ -18,4 +18,5 @@ webpack.config.js
 **/*.js.map
 **/*.d.ts
 !out/server/index.d.ts
+!out/test-helpers/**/*.d.t
 *.tgz

@@ -1,6 +1,6 @@
 {
 	"compilerOptions": {
-		"module": "commonjs",
+		"module": "node16",
 		"target": "ES2022",
 		"lib": [
 			"ES2022", "WebWorker"

@@ -1,0 +1,25 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "ES2022",
+		"lib": [
+			"ES2022",
+			"DOM",
+		],
+		"outDir": "../../out/test-helpers/esm",
+		"declaration": true,
+		"strict": true,
+		"noImplicitAny": false,
+		"noImplicitThis": true,
+		"noUnusedLocals": true,
+		"alwaysStrict": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
+		"sourceMap": false,
+		"newLine": "lf",
+		"removeComments": true,
+		"moduleResolution": "node",
+		"resolveJsonModule": true,
+		"esModuleInterop": true
+	}
+}

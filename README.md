@@ -6,7 +6,6 @@ This module helps testing VS Code web extensions locally.
 [![npm Package](https://img.shields.io/npm/v/@vscode/test-web.svg?style=flat-square)](https://www.npmjs.org/package/@vscode/test-web)
 [![NPM Downloads](https://img.shields.io/npm/dm/@vscode/test-web.svg)](https://npmjs.org/package/@vscode/test-web)
 
-
 See the [web extensions guide](https://code.visualstudio.com/api/extension-guides/web-extensions) to learn about web extensions.
 
 The node module runs a local web server that serves VS Code in the browser including the extension under development. Additionally the extension tests are automatically run.
@@ -70,6 +69,144 @@ async function go() {
 
 go()
 ```
+
+### Using Playwright for UI Testing
+
+Extension tests can use Playwright's full API via fixtures for DOM queries, screenshots, and UI interactions:
+
+```ts
+import { test } from '@vscode/test-web/playwright';
+import * as assert from 'assert';
+
+test('Verify editor is visible', async ({ page }) => {
+  const element = await page.$('.monaco-editor');
+  assert.ok(element, 'Editor should be visible');
+});
+
+test('Take screenshot', async ({ page }) => {
+  await page.screenshot({ path: 'screenshot.png' });
+});
+
+test('Query DOM elements', async ({ page }) => {
+  const divs = await page.$$('div');
+  const title = await page.evaluate(() => document.title);
+  const workbench = await page.$('.monaco-workbench');
+});
+
+test('Use keyboard', async ({ page }) => {
+  await page.keyboard.type('Hello');
+  await page.keyboard.press('Enter');
+});
+
+test('Make API requests', async ({ request }) => {
+  const response = await request.get('https://api.example.com/data');
+  const data = await response.json();
+  assert.ok(response.ok());
+});
+
+test('Use context', async ({ context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  const cookies = await context.cookies();
+});
+```
+
+#### Available Fixtures
+
+Tests receive Playwright fixtures as parameters, following the `@playwright/test` pattern:
+
+- **`page`**: Playwright [Page](https://playwright.dev/docs/api/class-page) instance for interacting with VS Code workbench
+  - All standard Page methods: `$()`, `$$()`, `click()`, `fill()`, `screenshot()`, `waitForSelector()`, etc.
+  - Nested objects: `keyboard`, `mouse`, `touchscreen`
+  - Navigation: `goto()`, `reload()`, `goBack()`, `goForward()`
+  - Evaluation: `evaluate()`, `evaluateHandle()`
+  - Screenshots: `screenshot()`
+
+- **`context`**: Playwright [BrowserContext](https://playwright.dev/docs/api/class-browsercontext) instance
+  - Methods: `newPage()`, `cookies()`, `addCookies()`, `clearCookies()`, `grantPermissions()`, `setGeolocation()`
+  - Context-level operations and state management
+
+- **`request`**: Playwright [APIRequestContext](https://playwright.dev/docs/api/class-apirequestcontext) instance
+  - Methods: `get()`, `post()`, `put()`, `delete()`, `fetch()`, `head()`, `patch()`
+  - Make HTTP API requests from tests
+
+All fixtures are dynamically proxied - any fixture property available on the server-side context object will be accessible in tests.
+
+#### Playwright Library Access
+
+For advanced scenarios, you can access the full Playwright library to create additional contexts or access browser types:
+
+```ts
+import { playwright } from '@vscode/test-web/playwright';
+import * as assert from 'assert';
+
+test('Create independent request context', async () => {
+  // Create a new API request context with custom configuration
+  const request = await playwright.request.newContext({
+    baseURL: 'https://api.example.com',
+    extraHTTPHeaders: {
+      'Authorization': 'Bearer token'
+    }
+  });
+
+  try {
+    const response = await request.get('/data');
+    assert.ok(response.ok());
+  } finally {
+    // Clean up the context when done
+    await request.dispose();
+  }
+});
+
+test('Use fixture and new contexts together', async ({ request }) => {
+  // Use the fixture request context (shares cookies with the browser)
+  const fixtureResponse = await request.get('https://example.com/data');
+
+  // Create an independent context (isolated cookies/storage)
+  const newRequest = await playwright.request.newContext();
+  try {
+    const newResponse = await newRequest.get('https://example.com/data');
+    // Both contexts work independently
+  } finally {
+    await newRequest.dispose();
+  }
+});
+```
+
+**Key differences:**
+
+- **Fixture `request`**: Shares cookie storage with the browser context. Changes to cookies in API requests affect the browser and vice versa.
+- **`playwright.request.newContext()`**: Creates an isolated context with its own cookie storage, independent from the browser.
+
+The `playwright` proxy provides access to:
+
+- `playwright.request.newContext()` - Create new API request contexts
+- `playwright.chromium` - Chromium browser type
+- `playwright.firefox` - Firefox browser type
+- `playwright.webkit` - WebKit browser type
+- Other Playwright library APIs
+
+#### Registry Management (Advanced)
+
+For diagnostic purposes and advanced scenarios, use the `playwrightRegistry` export:
+
+```ts
+import { test, playwrightRegistry } from '@vscode/test-web/playwright';
+
+test('diagnostic test', async ({ page }) => {
+  const sizeBefore = await playwrightRegistry.getSize();
+  const element = await page.$('.selector');
+  const sizeAfter = await playwrightRegistry.getSize();
+  assert.strictEqual(sizeAfter, sizeBefore + 1);
+});
+
+test('persist handles across tests', async ({ page }) => {
+  playwrightRegistry.disableAutoClear();
+  // handles will persist...
+  playwrightRegistry.enableAutoClear(); // restore default
+});
+```
+
+See `sample/src/web/test/suite/playwright.test.ts` for complete examples.
 
 CLI options:
 
