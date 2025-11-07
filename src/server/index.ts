@@ -666,57 +666,64 @@ async function cliMain(): Promise<void> {
 	}
 
 	if (extensionTestsPath) {
-		runTests({
-			extensionTestsPath,
-			extensionDevelopmentPath,
-			browserOptions,
-			browserType,
-			quality,
-			commit,
-			devTools,
-			waitForDebugger,
-			folderUri,
-			folderPath,
-			headless,
-			printServerLog,
-			permissions,
-			extensionPaths,
-			extensionIds,
-			vsCodeDevPath,
-			verbose,
-			esm,
-			coi,
-			host,
-			port,
-			testRunnerDataDir,
-		}).catch(e => {
+		try {
+			await runTests({
+				extensionTestsPath,
+				extensionDevelopmentPath,
+				browserOptions,
+				browserType,
+				quality,
+				commit,
+				devTools,
+				waitForDebugger,
+				folderUri,
+				folderPath,
+				headless,
+				printServerLog,
+				permissions,
+				extensionPaths,
+				extensionIds,
+				vsCodeDevPath,
+				verbose,
+				esm,
+				coi,
+				host,
+				port,
+				testRunnerDataDir,
+			});
+		} catch (e) {
 			console.log('Error running tests:', e);
 			process.exit(1);
-		});
+		}
 	} else {
-		open({
-			extensionDevelopmentPath,
-			browserOptions,
-			browserType,
-			quality,
-			commit,
-			devTools,
-			waitForDebugger,
-			folderUri,
-			folderPath,
-			headless,
-			printServerLog,
-			permissions,
-			extensionPaths,
-			extensionIds,
-			vsCodeDevPath,
-			verbose,
-			esm,
-			coi,
-			host,
-			port,
-			testRunnerDataDir,
-		});
+		try {
+			await open({
+				extensionDevelopmentPath,
+				browserOptions,
+				browserType,
+				quality,
+				commit,
+				devTools,
+				waitForDebugger,
+				folderUri,
+				folderPath,
+				headless,
+				printServerLog,
+				permissions,
+				extensionPaths,
+				extensionIds,
+				vsCodeDevPath,
+				verbose,
+				esm,
+				coi,
+				host,
+				port,
+				testRunnerDataDir,
+			});
+		} catch (e) {
+			console.log('Error opening browser:', e);
+			process.exit(1);
+		}
 	}
 }
 
