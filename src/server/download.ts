@@ -88,42 +88,54 @@ async function downloadAndUntar(downloadUrl: string, destination: string, messag
 
 
 export async function downloadAndUnzipVSCode(vscodeTestDir: string, quality: 'stable' | 'insider', commit: string | undefined): Promise<Static> {
-	let downloadURL: string | undefined;
-	if (!commit) {
-		const info = await getLatestBuild(quality);
-		commit = info.version;
-		downloadURL = info.url;
-	}
+	let retries = 3;
+	do {
+		try {
+			let downloadURL: string | undefined;
+			if (!commit) {
+				const info = await getLatestBuild(quality);
+				commit = info.version;
+				downloadURL = info.url;
+			}
 
-	const folderName = `vscode-web-${quality}-${commit}`;
-	const downloadedPath = path.resolve(vscodeTestDir, folderName);
-	if (existsSync(downloadedPath) && existsSync(path.join(downloadedPath, 'version'))) {
-		return { type: 'static', location: downloadedPath, quality, version: commit };
-	}
+			const folderName = `vscode-web-${quality}-${commit}`;
+			const downloadedPath = path.resolve(vscodeTestDir, folderName);
+			if (existsSync(downloadedPath) && existsSync(path.join(downloadedPath, 'version'))) {
+				return { type: 'static', location: downloadedPath, quality, version: commit };
+			}
 
-	if (!downloadURL) {
-		downloadURL = await getDownloadURL(quality, commit);
-		if (!downloadURL) {
-			throw Error(`Failed to find a download for ${quality} and ${commit}`);
+			if (!downloadURL) {
+				downloadURL = await getDownloadURL(quality, commit);
+				if (!downloadURL) {
+					throw Error(`Failed to find a download for ${quality} and ${commit}`);
+				}
+			}
+
+			if (existsSync(vscodeTestDir)) {
+				await fs.rm(vscodeTestDir, { recursive: true, maxRetries: 5 });
+			}
+
+			await fs.mkdir(vscodeTestDir, { recursive: true });
+
+			const productName = `VS Code ${quality === 'stable' ? 'Stable' : 'Insiders'}`;
+
+			try {
+				await downloadAndUntar(downloadURL, downloadedPath, `Downloading ${productName}`);
+				await fs.writeFile(path.join(downloadedPath, 'version'), folderName);
+			} catch (err) {
+				console.error(err);
+				throw Error(`Failed to download and unpack ${productName}.${commit ? ' Did you specify a valid commit?' : ''}`);
+			}
+			return { type: 'static', location: downloadedPath, quality, version: commit };
+		} catch (e) {
+			retries--;
+			if (retries === 0) {
+				throw e;
+			}
+			console.log(`Download and install failed with '${e}'. Retrying... (${retries} attempts left)`);
+			await new Promise(resolve => setTimeout(resolve, 3000));
 		}
-	}
-
-	if (existsSync(vscodeTestDir)) {
-		await fs.rm(vscodeTestDir, { recursive: true, maxRetries: 5 });
-	}
-
-	await fs.mkdir(vscodeTestDir, { recursive: true });
-
-	const productName = `VS Code ${quality === 'stable' ? 'Stable' : 'Insiders'}`;
-
-	try {
-		await downloadAndUntar(downloadURL, downloadedPath, `Downloading ${productName}`);
-		await fs.writeFile(path.join(downloadedPath, 'version'), folderName);
-	} catch (err) {
-		console.error(err);
-		throw Error(`Failed to download and unpack ${productName}.${commit ? ' Did you specify a valid commit?' : ''}`);
-	}
-	return { type: 'static', location: downloadedPath, quality, version: commit };
+	} while (true);
 }
 
 export async function fetch(api: string): Promise<string> {
@@ -131,7 +143,7 @@ export async function fetch(api: string): Promise<string> {
 		const httpLibrary = api.startsWith('https') ? https : http;
 		httpLibrary.get(api, getAgent(api), res => {
 			if (res.statusCode !== 200) {
-				reject('Failed to get content from ');
+				reject('Failed to get content from ' + api + '. Status code: ' + res.statusCode	);
 			}
 
 			let data = '';
