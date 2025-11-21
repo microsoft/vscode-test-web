@@ -1,6 +1,6 @@
 {
   "name": "@vscode/test-web",
-  "version": "0.0.75",
+  "version": "0.0.76",
   "scripts": {
     "install-extensions": "npm i --prefix=fs-provider && npm i --prefix=sample",
     "compile": "tsc -b ./ && npm run compile-fs-provider",
