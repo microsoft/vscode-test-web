@@ -66,7 +66,7 @@ export const prebuiltExtensionsLocation = '.build/builtInExtensions';
 
 export async function getScannedBuiltinExtensions(vsCodeDevLocation: string): Promise<IScannedBuiltinExtension[]> {
 	// use the build utility as to not duplicate the code
-	const extensionsUtil = await import(path.join(vsCodeDevLocation, 'build', 'lib', 'extensions.js'));
+	const extensionsUtil = await getExtensionsUtil(vsCodeDevLocation);
 
 	const localExtensions : IScannedBuiltinExtension[] =  extensionsUtil.scanBuiltinExtensions(path.join(vsCodeDevLocation, 'extensions'));
 	const prebuiltExtensions : IScannedBuiltinExtension[] =  extensionsUtil.scanBuiltinExtensions(path.join(vsCodeDevLocation, prebuiltExtensionsLocation));
@@ -84,3 +84,13 @@ export async function getScannedBuiltinExtensions(vsCodeDevLocation: string): Pr
 	}
 	return localExtensions.concat(prebuiltExtensions);
 }
+
+async function getExtensionsUtil(vsCodeDevLocation: string) {
+	const base = path.join(vsCodeDevLocation, 'build', 'lib');
+	try {
+		return await import(path.join(base, 'extensions.ts'));
+	} catch {
+		return await import(path.join(base, 'extensions.js'));
+	}
+}
+
