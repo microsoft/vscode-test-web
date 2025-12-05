@@ -8,7 +8,7 @@ import { IConfig } from './main';
 import * as Koa from 'koa';
 import * as kstatic from 'koa-static';
 import * as kmount from 'koa-mount';
-import * as Router from '@koa/router';
+import Router, { RouterMiddleware } from '@koa/router';
 
 import { Dirent, promises as fs, Stats } from 'fs';
 import * as path from 'path';
@@ -28,7 +28,7 @@ export function configureMounts(config: IConfig, app: Koa): void {
 	}
 }
 
-function fileOps(mountPrefix: string, folderMountPath: string): Router.Middleware {
+function fileOps(mountPrefix: string, folderMountPath: string): RouterMiddleware {
 	const router = new Router();
 	router.get(`${mountPrefix}{/*path}`, async (ctx, next) => {
 		if (ctx.query.stat !== undefined) {

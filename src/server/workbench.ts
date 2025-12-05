@@ -6,7 +6,7 @@
 import * as path from 'path';
 import { promises as fs } from 'fs';
 import { URI } from 'vscode-uri';
-import * as Router from '@koa/router';
+import Router, { RouterMiddleware } from '@koa/router';
 
 import { GalleryExtensionInfo, IConfig } from './main';
 import { getScannedBuiltinExtensions, IScannedBuiltinExtension, scanForExtensions, URIComponents } from './extensions';
@@ -172,7 +172,7 @@ async function getWorkbenchOptions(
 	return options;
 }
 
-export default function (config: IConfig): Router.Middleware {
+export default function (config: IConfig): RouterMiddleware {
 	const router = new Router<{ workbench: Workbench }>();
 
 	router.use(async (ctx, next) => {
