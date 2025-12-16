@@ -27,14 +27,20 @@
 		]
 	},
 	"scripts": {
-		"test": "node ./dist/web/test/runTest.js",
-		"pretest": "npm run compile-web && tsc -p tsconfig.runTest.json",
+		"test": "npm run test:mocha && npm run test:playwright",
+		"test:mocha": "node ./dist/web/test/runTest.js",
+		"test:playwright": "playwright test",
+		"test:playwright:ui": "playwright test --ui",
+		"test:playwright:debug": "playwright test --debug",
+		"pretest:mocha": "npm run compile-web && tsc -p tsconfig.runTest.json",
+		"pretest:playwright": "npm run compile-web && tsc -p tsconfig.playwright.json",
 		"vscode:prepublish": "npm run package-web",
 		"compile-web": "webpack",
 		"watch-web": "webpack --watch",
 		"package-web": "webpack --mode production --devtool hidden-source-map"
 	},
 	"devDependencies": {
+		"@playwright/test": "^1.48.0",
 		"@types/mocha": "10.0.10",
 		"@types/vscode": "^1.94.0",
 		"@types/webpack-env": "^1.18.8",
