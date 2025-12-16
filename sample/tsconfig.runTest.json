@@ -7,7 +7,8 @@
 			"ES2022"
 		],
 		"rootDir": "src",
-		"strict": true
+		"strict": true,
+		"skipLibCheck": true
 	},
 	"include": [
 		"./src/web/test/runTest.ts"
