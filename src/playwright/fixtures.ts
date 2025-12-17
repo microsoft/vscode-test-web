@@ -27,14 +27,6 @@ type VSCodeFixtures = {
 	 * ```
 	 */
 	vscode: VSCodeAPI;
-
-	/**
-	 * The VSCode extension host worker.
-	 *
-	 * This is the web worker where VSCode's extension host runs.
-	 * The vscode fixture is created from this worker.
-	 */
-	vscodeWorker: Worker;
 };
 
 /**
@@ -54,15 +46,16 @@ type VSCodeFixtures = {
  */
 export const test = base.extend<VSCodeFixtures>({
 	/**
-	 * Detects and provides the VSCode extension host worker.
+	 * Creates and provides the proxied VSCode API.
 	 *
 	 * This fixture:
 	 * 1. Navigates to the VSCode page
 	 * 2. Waits for the workbench to load
 	 * 3. Waits for the extension host worker to be created
-	 * 4. Returns the worker for use by other fixtures
+	 * 4. Creates a proxy that accesses the vscode global in the worker
+	 * 5. Returns the proxy with Promisified types for fluent API usage
 	 */
-	vscodeWorker: async ({ page }, use) => {
+	vscode: async ({ page }, use) => {
 		// Navigate to VSCode (server started by playwright.config.ts)
 		await page.goto('/');
 
@@ -82,19 +75,7 @@ export const test = base.extend<VSCodeFixtures>({
 			timeout: 30000
 		});
 
-		await use(worker);
-	},
-
-	/**
-	 * Creates and provides the proxied VSCode API.
-	 *
-	 * This fixture:
-	 * 1. Takes the extension host worker from the vscodeWorker fixture
-	 * 2. Creates a proxy that accesses the vscode global in the worker
-	 * 3. Returns the proxy with Promisified types for fluent API usage
-	 */
-	vscode: async ({ vscodeWorker }, use) => {
-		const vscodeProxy = await createVSCodeProxy(vscodeWorker);
+		const vscodeProxy = await createVSCodeProxy(worker);
 		await use(vscodeProxy);
 		// TODO: Cleanup handles if needed
 	}
