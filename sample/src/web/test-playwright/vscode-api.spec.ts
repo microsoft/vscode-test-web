@@ -3,10 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { test, expect, type VSCodeAPI } from '@vscode/test-web/playwright';
+import { test, expect } from '@vscode/test-web/playwright';
 
 test.describe('VSCode API Proxy', () => {
-	test('should access workspace.workspaceFolders', async ({ vscode }: { vscode: VSCodeAPI }) => {
+	test('should access workspace.workspaceFolders', async ({ vscode }) => {
 		// Access workspace folders via proxied API
 		const folders = await vscode.workspace.workspaceFolders;
 
@@ -22,7 +22,7 @@ test.describe('VSCode API Proxy', () => {
 		expect(firstFolder).toHaveProperty('index');
 	});
 
-	test('should access Uri.parse() static method', async ({ vscode }: { vscode: VSCodeAPI }) => {
+	test('should access Uri.parse() static method', async ({ vscode }) => {
 		// Call static method on Uri class
 		const uri = await vscode.Uri.parse('file:///path/to/file.txt');
 
@@ -34,7 +34,7 @@ test.describe('VSCode API Proxy', () => {
 		expect(uri.path).toBe('/path/to/file.txt');
 	});
 
-	test('should access Uri.joinPath() with fluent chaining', async ({ vscode }: { vscode: VSCodeAPI }) => {
+	test('should access Uri.joinPath() with fluent chaining', async ({ vscode }) => {
 		// Get workspace folder first
 		const folders = await vscode.workspace.workspaceFolders;
 		const folderUri = folders[0].uri;
@@ -48,7 +48,7 @@ test.describe('VSCode API Proxy', () => {
 		expect(fileUri.path).toContain('test.txt');
 	});
 
-	test('should call workspace.fs.stat()', async ({ vscode }: { vscode: VSCodeAPI }) => {
+	test('should call workspace.fs.stat()', async ({ vscode }) => {
 		// Get workspace folder URI
 		const folders = await vscode.workspace.workspaceFolders;
 		const folderUri = folders[0].uri;
@@ -67,7 +67,7 @@ test.describe('VSCode API Proxy', () => {
 		expect(stats).toHaveProperty('ctime');
 	});
 
-	test('should read file contents with workspace.fs.readFile()', async ({ vscode }: { vscode: VSCodeAPI }) => {
+	test('should read file contents with workspace.fs.readFile()', async ({ vscode }) => {
 		// Get workspace folder and create file URI
 		const folders = await vscode.workspace.workspaceFolders;
 		const folderUri = folders[0].uri;

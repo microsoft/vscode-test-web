@@ -6,12 +6,12 @@
 import { test as base, expect } from '@playwright/test';
 import type { Worker } from '@playwright/test';
 import { createVSCodeProxy } from './vscode-proxy';
-import type { VSCodeAPI } from './vscode-types';
+import type { VSCode } from './vscode-types';
 
 /**
  * Extended Playwright fixtures that provide VSCode API access.
  */
-type VSCodeFixtures = {
+export type VSCodeFixtures = {
 	/**
 	 * The proxied VSCode API.
 	 *
@@ -26,13 +26,14 @@ type VSCodeFixtures = {
 	 * });
 	 * ```
 	 */
-	vscode: VSCodeAPI;
+	vscode: VSCode;
 };
 
 /**
  * Extended Playwright test with VSCode fixtures.
  *
  * Import this instead of @playwright/test to get VSCode API access in your tests.
+ * The vscode fixture is automatically typed, so no type annotations are needed.
  *
  * @example
  * ```typescript

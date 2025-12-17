@@ -39,4 +39,9 @@ export type Promisify<T> = Promise<T> & {
  *
  * This is the type of the `vscode` fixture provided to Playwright tests.
  */
-export type VSCodeAPI = Promisify<typeof vscode>;
+export type VSCode = Promisify<typeof vscode>;
+
+/**
+ * @deprecated Use `VSCode` instead
+ */
+export type VSCodeAPI = VSCode;
