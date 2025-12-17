@@ -3,8 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IConfig, IServer, runServer, Static, Sources } from './main';
-import { downloadAndUnzipVSCode } from './download';
+import { IConfig, IServer, runServer, Static, Sources } from '../server/main';
+import { downloadAndUnzipVSCode } from '../server/download';
 import * as path from 'path';
 
 export interface StartServerOptions {
@@ -129,7 +129,7 @@ export interface VSCodeServerInfo {
  * @example
  * ```typescript
  * // In a standalone script (e.g., for Playwright's webServer config)
- * import { startVSCodeServer } from '@vscode/test-web/out/playwrightHelpers';
+ * import { startVSCodeServer } from '@vscode/test-web/playwright';
  * import * as path from 'path';
  *
  * const serverInfo = await startVSCodeServer({

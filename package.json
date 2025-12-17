@@ -19,6 +19,11 @@
   "bin": {
     "vscode-test-web": "./out/server/index.js"
   },
+  "exports": {
+    ".": "./out/server/index.js",
+    "./playwright": "./out/playwright/playwright/index.js",
+    "./playwright/bridge": "./out/playwright/playwright/bridge/index.js"
+  },
   "engines": {
     "node": ">=20"
   },
@@ -26,7 +31,6 @@
     "@koa/cors": "^5.0.0",
     "@koa/router": "^15.0.0",
     "@playwright/browser-chromium": "^1.57.0",
-    "tinyglobby": "^0.2.15",
     "gunzip-maybe": "^1.4.2",
     "http-proxy-agent": "^7.0.2",
     "https-proxy-agent": "^7.0.6",
@@ -37,11 +41,13 @@
     "minimist": "^1.2.8",
     "playwright": "^1.57.0",
     "tar-fs": "^3.1.1",
+    "tinyglobby": "^0.2.15",
     "vscode-uri": "^3.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.3",
     "@eslint/js": "^9.39.1",
+    "@tony.ganchev/eslint-plugin-header": "^3.1.11",
     "@types/gunzip-maybe": "^1.4.3",
     "@types/koa": "^3.0.1",
     "@types/koa__router": "^12.0.5",
@@ -54,8 +60,10 @@
     "@typescript-eslint/eslint-plugin": "^8.48.1",
     "@typescript-eslint/parser": "^8.48.1",
     "eslint": "^9.39.1",
-    "@tony.ganchev/eslint-plugin-header": "^3.1.11",
     "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "@playwright/test": "^1.48.0"
   },
   "license": "MIT",
   "author": "Visual Studio Code Team",

@@ -5,5 +5,5 @@ out
 sample/dist
 fs-provider/dist
 tsconfig.tsbuildinfo
-sample/playwright-report
-sample/test-results
+playwright-report/
+test-results/

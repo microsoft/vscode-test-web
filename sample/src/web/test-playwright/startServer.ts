@@ -1,10 +1,12 @@
-import { startVSCodeServer } from '@vscode/test-web/out/server/playwright';
+import { startVSCodeServer } from '@vscode/test-web/playwright';
 import * as path from 'path';
 
 async function main() {
 	try {
 		const serverInfo = await startVSCodeServer({
 			extensionDevelopmentPath: path.resolve(__dirname, '../../../'),
+			// Load the bridge module to expose vscode API for Playwright tests
+			extensionTestsPath: path.resolve(__dirname, './bridge'),
 			folderPath: path.resolve(__dirname, '../../../test-workspace'),
 			printServerLog: true,
 			port: 3000,
