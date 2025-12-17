@@ -26,9 +26,21 @@ import type { Worker, JSHandle } from '@playwright/test';
  * ```
  */
 export async function createVSCodeProxy(worker: Worker): Promise<any> {
-	// Get handle to the vscode module in the worker
+	// Wait for the bridge to initialize and expose the vscode API
 	// The bridge module (loaded via extensionTestsPath) exposes this global
-	const vscodeHandle = await worker.evaluateHandle(() => {
+	const vscodeHandle = await worker.evaluateHandle(async () => {
+		// Poll for the API to be available (with timeout)
+		const maxWaitTime = 30000; // 30 seconds
+		const pollInterval = 100; // 100ms
+		const startTime = Date.now();
+
+		while (!((globalThis as any).__vscodeApiForPlaywright)) {
+			if (Date.now() - startTime > maxWaitTime) {
+				throw new Error('Timeout waiting for VSCode API to be exposed by bridge');
+			}
+			await new Promise(resolve => setTimeout(resolve, pollInterval));
+		}
+
 		return (globalThis as any).__vscodeApiForPlaywright;
 	});
 

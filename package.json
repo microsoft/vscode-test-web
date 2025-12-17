@@ -24,6 +24,12 @@
     "./playwright": "./out/playwright/playwright/index.js",
     "./playwright/bridge": "./out/playwright/playwright/bridge/index.js"
   },
+  "typesVersions": {
+    "*": {
+      "playwright": ["./out/playwright/playwright/index.d.ts"],
+      "playwright/bridge": ["./out/playwright/playwright/bridge/index.d.ts"]
+    }
+  },
   "engines": {
     "node": ">=20"
   },
