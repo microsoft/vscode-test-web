@@ -88,7 +88,7 @@ export interface Options {
 	coi?: boolean;
 
 	/**
-	 * If set, serves the page with ESM usage.
+	 * If set to true, serves the page with ESM usage, if set to false, serves the page with AMD usage. If not set, ESM is used if the build supports it.
 	 */
 	esm?: boolean;
 
@@ -183,7 +183,7 @@ export async function runTests(options: Options & { extensionTestsPath: string }
 		extensionPaths: options.extensionPaths,
 		extensionIds: options.extensionIds,
 		coi: !!options.coi,
-		esm: !!options.esm,
+		esm: options.esm,
 	};
 
 	const host = options.host ?? 'localhost';
@@ -253,7 +253,7 @@ export async function open(options: Options): Promise<Disposable> {
 		extensionPaths: options.extensionPaths,
 		extensionIds: options.extensionIds,
 		coi: !!options.coi,
-		esm: !!options.esm,
+		esm: options.esm,
 	};
 
 	const host = options.host ?? 'localhost';
@@ -354,6 +354,9 @@ function validateBooleanOrUndefined(options: CommandLineOptions, name: keyof Com
 	const value = options[name];
 	if (value === undefined || typeof value === 'boolean') {
 		return value;
+	}
+	if (value === null) {
+		return undefined;
 	}
 	console.log(`'${name}' needs to be a boolean value.`);
 	showHelp();
@@ -586,7 +589,7 @@ function showHelp() {
 	console.log(`  --headless: Whether to hide the browser. Defaults to true when an extensionTestsPath is provided, otherwise false. [Optional]`);
 	console.log(`  --permission: Permission granted in the opened browser: e.g. 'clipboard-read', 'clipboard-write'. [Optional, Multiple]`);
 	console.log(`  --coi: Enables cross origin isolation [Optional]`);
-	console.log(`  --esm: Serve the ESM variant of VS Code [Optional]`);
+	console.log(`  --esm: If set to true, serves the page with ESM loader, if set to false, serves the page with AMD loader. If not set, ESM is used if the build supports it. [Optional]`);
 	console.log(`  --folder-uri: workspace to open VS Code on. Ignored when folderPath is provided. [Optional]`);
 	console.log(`  --extensionPath: A path pointing to a folder containing additional extensions to include [Optional, Multiple]`);
 	console.log(`  --extensionId: The id of an extension include. The format is '\${publisher}.\${name}'. Append '@prerelease' to use a prerelease version [Optional, Multiple]`);
@@ -613,6 +616,9 @@ async function cliMain(): Promise<void> {
 	const options: minimist.Opts = {
 		string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browser', 'browserOption', 'browserType', 'quality', 'version', 'commit', 'waitForDebugger', 'folder-uri', 'permission', 'extensionPath', 'extensionId', 'sourcesPath', 'host', 'port', 'testRunnerDataDir'],
 		boolean: ['open-devtools', 'headless', 'hideServerLog', 'printServerLog', 'help', 'verbose', 'coi', 'esm'],
+		default: {
+			esm: null
+		},
 		unknown: arg => {
 			if (arg.startsWith('-')) {
 				console.log(`Unknown argument ${arg}`);

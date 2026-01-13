@@ -179,7 +179,7 @@ export default function (config: IConfig): RouterMiddleware {
 		if (config.build.type === 'sources') {
 			const builtInExtensions = await getScannedBuiltinExtensions(config.build.location);
 			const productOverrides = await getProductOverrides(config.build.location);
-			const esm = config.esm || await isESM(config.build.location);
+			const esm = config.esm ?? await isESM(config.build.location);
 			console.log('Using ESM loader:', esm);
 			const devCSSModules = esm ? await getDevCssModules(config.build.location) : [];
 			ctx.state.workbench = new Workbench(`${ctx.protocol}://${ctx.host}/static/sources`, true, esm, devCSSModules, builtInExtensions, {
@@ -189,12 +189,16 @@ export default function (config: IConfig): RouterMiddleware {
 			});
 		} else if (config.build.type === 'static') {
 			const baseUrl = `${ctx.protocol}://${ctx.host}/static/build`;
-			ctx.state.workbench = new Workbench(baseUrl, false, config.esm, [], [], {
+			const esm = config.esm ?? await isESM(config.build.location);
+			console.log('Using ESM loader:', esm);
+			ctx.state.workbench = new Workbench(baseUrl, false, esm, [], [], {
 				webEndpointUrlTemplate: `${ctx.protocol}://{{uuid}}.${ctx.host}/static/build`,
 				webviewContentExternalBaseUrlTemplate: `${ctx.protocol}://{{uuid}}.${ctx.host}/static/build/out/vs/workbench/contrib/webview/browser/pre/`
 			});
 		} else if (config.build.type === 'cdn') {
-			ctx.state.workbench = new Workbench(config.build.uri, false, config.esm, []);
+			const esm = config.esm ?? true;
+			console.log('Using ESM loader:', esm);
+			ctx.state.workbench = new Workbench(config.build.uri, false, esm, []);
 		}
 		await next();
 	});
@@ -229,12 +233,6 @@ async function getDevCssModules(vsCodeDevLocation: string): Promise<string[]> {
 }
 
 async function isESM(vsCodeDevLocation: string): Promise<boolean> {
-	try {
-		const packageJSON = await fs.readFile(path.join(vsCodeDevLocation, 'out', 'package.json'));
-		return JSON.parse(packageJSON.toString()).type === 'module';
-	} catch (e) {
-		// ignore
-	}
 	try {
 		const packageJSON = await fs.readFile(path.join(vsCodeDevLocation, 'package.json'));
 		return JSON.parse(packageJSON.toString()).type === 'module';
