@@ -59,17 +59,43 @@ export const test = base.extend<VSCodeFixtures>({
 	vscode: async ({ page }, use) => {
 		// Wait for the extension host worker to be created
 		// The extension host is where the vscode global API lives
-		const worker = await page.waitForEvent('worker', {
-			predicate: (w: Worker) => {
-				const url = w.url();
-				// Extension host worker name is defined by VSCode in
-				// https://github.com/microsoft/vscode/blob/aac80a7d058f79fd273f8890c7711c35af7ea3e2/src/vs/workbench/services/extensions/worker/webWorkerExtensionHostIframe.html#L17
-				return url.includes('ExtensionHostWorker');
-			},
-			timeout: 30000
-		});
+		// Extension host worker name is defined by VSCode in
+		// https://github.com/microsoft/vscode/blob/aac80a7d058f79fd273f8890c7711c35af7ea3e2/src/vs/workbench/services/extensions/worker/webWorkerExtensionHostIframe.html#L17
+		// The worker URL is a blob URL, so we need to check the worker's name property
 
-		const vscodeProxy = await createVSCodeProxy(worker);
+		let extensionHostWorker: Worker | null = null;
+
+		// Listen for all workers and check their name
+		const workerHandler = async (w: Worker) => {
+			try {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				// @ts-ignore - self is available in worker context
+				const workerName = await w.evaluate(() => (self as any).name);
+				if (workerName === 'ExtensionHostWorker') {
+					extensionHostWorker = w;
+				}
+			} catch (e) {
+				// Worker might be closing, ignore
+			}
+		};
+
+		page.on('worker', workerHandler);
+
+		// Wait for the extension host worker to be found
+		const startTime = Date.now();
+		const timeout = 30000;
+
+		while (!extensionHostWorker && (Date.now() - startTime) < timeout) {
+			await new Promise(resolve => setTimeout(resolve, 100));
+		}
+
+		page.off('worker', workerHandler);
+
+		if (!extensionHostWorker) {
+			throw new Error('Extension host worker not found within timeout');
+		}
+
+		const vscodeProxy = await createVSCodeProxy(extensionHostWorker);
 		await use(vscodeProxy);
 
 		// TODO: Cleanup handles if needed
