@@ -1,3 +1,8 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
 // Declare require for webpack/AMD module loading
 declare const require: {
 	(moduleId: string): any;
@@ -17,22 +22,8 @@ declare const require: {
  * ```
  */
 export function exposeVSCodeAPI(): Promise<void> {
-	return new Promise((c, e) => {
-		try {
-			const vscode = require('vscode');
-			(globalThis as any).__vscodeApiForPlaywright = vscode;
-			c();
-		} catch (err) {
-			console.error('[exposeVSCodeAPI] Error:', err);
-			e(err);
-		}
+	return new Promise(() => {
+		const vscode = require('vscode');
+		(globalThis as any).__vscodeApiForPlaywright = vscode;
 	});
-}
-
-/**
- * Default run function for the bridge module.
- * Automatically exposes the VSCode API when loaded as extensionTestsPath.
- */
-export function run(): Promise<void> {
-	return exposeVSCodeAPI();
 }

@@ -1,6 +1,10 @@
 {
   "name": "@vscode/test-web",
   "version": "0.0.77",
+  "workspaces": [
+    "sample",
+    "fs-provider"
+  ],
   "scripts": {
     "install-extensions": "npm i --prefix=fs-provider && npm i --prefix=sample",
     "compile": "tsc -b ./ && npm run compile-fs-provider",
@@ -21,13 +25,13 @@
   },
   "exports": {
     ".": "./out/server/index.js",
-    "./playwright": "./out/playwright/playwright/index.js",
-    "./playwright/bridge": "./out/playwright/playwright/bridge/index.js"
+    "./playwright": "./out/server/playwright/index.js",
+    "./playwright/bridge": "./out/browser/playwright/index.js"
   },
   "typesVersions": {
     "*": {
-      "playwright": ["./out/playwright/playwright/index.d.ts"],
-      "playwright/bridge": ["./out/playwright/playwright/bridge/index.d.ts"]
+      "playwright": ["./out/server/playwright/index.d.ts"],
+      "playwright/bridge": ["./out/browser/playwright/index.d.ts"]
     }
   },
   "engines": {

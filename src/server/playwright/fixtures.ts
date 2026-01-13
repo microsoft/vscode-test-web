@@ -57,27 +57,21 @@ export const test = base.extend<VSCodeFixtures>({
 	 * 5. Returns the proxy with Promisified types for fluent API usage
 	 */
 	vscode: async ({ page }, use) => {
-		// Navigate to VSCode (server started by playwright.config.ts)
-		await page.goto('/');
-
-		// Wait for VSCode workbench to load
-		await page.locator('.monaco-workbench').waitFor({ timeout: 30000 });
-
 		// Wait for the extension host worker to be created
 		// The extension host is where the vscode global API lives
 		const worker = await page.waitForEvent('worker', {
 			predicate: (w: Worker) => {
 				const url = w.url();
-				// Extension host workers typically have these patterns in their URL
-				return url.includes('extensionHost') ||
-				       url.includes('workbench') ||
-				       url.startsWith('blob:');
+				// Extension host worker name is defined by VSCode in
+				// https://github.com/microsoft/vscode/blob/aac80a7d058f79fd273f8890c7711c35af7ea3e2/src/vs/workbench/services/extensions/worker/webWorkerExtensionHostIframe.html#L17
+				return url.includes('ExtensionHostWorker');
 			},
 			timeout: 30000
 		});
 
 		const vscodeProxy = await createVSCodeProxy(worker);
 		await use(vscodeProxy);
+
 		// TODO: Cleanup handles if needed
 	}
 });

@@ -3,8 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IConfig, IServer, runServer, Static, Sources } from '../server/main';
-import { downloadAndUnzipVSCode } from '../server/download';
+import { IConfig, IServer, runServer, Static, Sources } from '../main';
+import { downloadAndUnzipVSCode } from '../download';
 import * as path from 'path';
 
 export interface StartServerOptions {

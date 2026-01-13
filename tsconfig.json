@@ -15,10 +15,7 @@
             "path": "./src/browser/tsconfig-amd.json"
         },
         {
-            "path": "./src/playwright/tsconfig.json"
-        },
-        {
-            "path": "./src/playwright/bridge/tsconfig.json"
+            "path": "./src/browser/playwright/tsconfig.json"
         }
     ]
 }
