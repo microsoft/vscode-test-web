@@ -297,9 +297,13 @@ async function openBrowser(endpoint: string, options: Options, configPage?: (pag
 		args.push(`--remote-debugging-port=${options.waitForDebugger}`);
 	}
 
+	if (options.devTools && options.browserType === 'chromium') {
+		args.push('--auto-open-devtools-for-tabs');
+	}
+
 	const headless = options.headless ?? options.extensionTestsPath !== undefined;
 
-	const browser = await browserType.launch({ headless, args, devtools: options.devTools });
+	const browser = await browserType.launch({ headless, args });
 	const context = await browser.newContext({ viewport: null });
 	if (options.permissions) {
 		context.grantPermissions(options.permissions);
