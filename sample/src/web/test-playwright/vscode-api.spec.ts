@@ -27,8 +27,12 @@ test.describe('VSCode API Proxy', () => {
 	test.describe('FluentJSHandle', () => {
 
 		test.describe('JSHandle methods', () => {
-			test.only('jsonValue() on root handle', async ({ vscode }) => {
-				const value = await vscode.jsonValue();
+			test('jsonValue() on root handle', async ({ vscode }) => {
+				console.log('[TEST] Accessing vscode.jsonValue');
+				const jsonValueMethod = vscode.jsonValue;
+				console.log('[TEST] Got jsonValueMethod:', typeof jsonValueMethod);
+				const value = await jsonValueMethod();
+				console.log('[TEST] Got value:', typeof value);
 				expect(value).toBeDefined();
 			});
 

@@ -93,10 +93,57 @@ function createFluentJSHandle<T>(
 	const proxy = new Proxy(target, {
 		// TODO: There are way more functions on ProxyHandler to consider implementing for full coverage.
 
+		// Prevent the proxy from being treated as thenable
+		has(_target, prop: string | symbol) {
+			console.log(`[PROXY HAS] prop=${String(prop)}`);
+			// TODO: Is this correct in all cases or only for our outermost proxy?
+			// Don't claim to have 'then' - we're not a Promise
+			if (prop === 'then') {
+				return false;
+			}
+			// For JSHandle methods, claim we have them
+			if (prop in jsHandleMembers) {
+				return true;
+			}
+			// Can't check the handle synchronously, so assume we have it
+			// The get trap will handle it properly
+			return true;
+		},
+
+		// Define property descriptor to satisfy proxy invariants
+		getOwnPropertyDescriptor(_target, prop: string | symbol) {
+			console.log(`[PROXY getOwnPropertyDescriptor] prop=${String(prop)}`);
+			// TODO: Is this correct in all cases or only for our outermost proxy?
+			// Don't claim 'then' as own property
+			if (prop === 'then') {
+				return undefined;
+			}
+			// For JSHandle methods, reflect from target to satisfy invariants
+			if (prop in jsHandleMembers) {
+				return Reflect.getOwnPropertyDescriptor(target, prop);
+			}
+			// For other properties (vscode API properties), return configurable descriptor
+			return {
+				configurable: true,
+				enumerable: true,
+				writable: false,
+				value: undefined // Will be resolved via get trap
+			};
+		},
+
 		// Handle property access
 		get(_target, prop: string | symbol) {
+			console.log(`[PROXY GET] prop=${String(prop)}, in jsHandleMembers=${prop in jsHandleMembers}`);
+
+			// Return undefined for 'then' to prevent being treated as thenable
+			if (prop === 'then') {
+				console.log('[PROXY GET] Returning undefined for then');
+				return undefined;
+			}
+
 			// Forward JSHandle methods to the underlying handle
 			if (prop in jsHandleMembers) {
+				console.log(`[PROXY GET] Forwarding JSHandle method: ${String(prop)}`);
 
 				if (jsHandleMembers[prop] === 'function') {
 					// Cache the function reference after first access
@@ -134,6 +181,9 @@ function createFluentJSHandle<T>(
 
 		// Handle function calls
 		apply(_target, _thisArg, argArray: any[]) {
+			console.log(`[PROXY APPLY] parentHandlePromise=${!!parentHandlePromise}, propertyName=${propertyName}, args.length=${argArray.length}`);
+			console.log(`[PROXY APPLY] args types:`, argArray.map(a => typeof a));
+
 			// If we have parent + propertyName, invoke via parent to preserve 'this' binding
 			// getProperty() returns a handle to the function itself, but loses the 'this' binding.
 			// To preserve 'this', we must invoke the method via the parent object.
