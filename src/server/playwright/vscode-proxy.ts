@@ -100,7 +100,6 @@ function createFluentJSHandle<T>(
 
 		// Prevent the proxy from being treated as thenable
 		has(_target, prop: string | symbol) {
-			console.log(`[PROXY HAS] prop=${String(prop)}`);
 			// TODO: Is this correct in all cases or only for our outermost proxy?
 			// Don't claim to have 'then' - we're not a Promise
 			if (prop === 'then') {
@@ -117,7 +116,6 @@ function createFluentJSHandle<T>(
 
 		// Define property descriptor to satisfy proxy invariants
 		getOwnPropertyDescriptor(_target, prop: string | symbol) {
-			console.log(`[PROXY getOwnPropertyDescriptor] prop=${String(prop)}`);
 			// TODO: Is this correct in all cases or only for our outermost proxy?
 			// Don't claim 'then' as own property
 			if (prop === 'then') {
@@ -138,24 +136,18 @@ function createFluentJSHandle<T>(
 
 		// Handle property access
 		get(_target, prop: string | symbol) {
-			console.log(`[PROXY GET] prop=${String(prop)}, in jsHandleMembers=${prop in jsHandleMembers}`);
-
 			// Expose the underlying handle promise via symbol
 			if (prop === FLUENT_HANDLE_SYMBOL) {
-				console.log('[PROXY GET] Returning handlePromise for FLUENT_HANDLE_SYMBOL');
 				return handlePromise;
 			}
 
 			// Return undefined for 'then' to prevent being treated as thenable
 			if (prop === 'then') {
-				console.log('[PROXY GET] Returning undefined for then');
 				return undefined;
 			}
 
 			// Forward JSHandle methods to the underlying handle
 			if (prop in jsHandleMembers) {
-				console.log(`[PROXY GET] Forwarding JSHandle method: ${String(prop)}`);
-
 				if (jsHandleMembers[prop] === 'function') {
 					// Cache the function reference after first access
 					// This avoids an edge case where if the property is a getter that returns a new function each time,
@@ -192,22 +184,12 @@ function createFluentJSHandle<T>(
 
 		// Handle function calls
 		apply(_target, _thisArg, argArray: any[]) {
-			console.log(`[PROXY APPLY] parentHandlePromise=${!!parentHandlePromise}, propertyName=${propertyName}, args.length=${argArray.length}`);
-			console.log(`[PROXY APPLY] args types:`, argArray.map(a => typeof a));
-
 			// Unwrap any FluentJSHandle proxies in arguments to get underlying JSHandles
 			const unwrapArgs = async () => {
-				console.log('[PROXY APPLY unwrapArgs] Starting to unwrap args');
 				return await Promise.all(
-					argArray.map(async (arg, index) => {
-						console.log(`[PROXY APPLY unwrapArgs] arg[${index}] type=${typeof arg}`);
-						if (typeof arg === 'function') {
-							console.log(`[PROXY APPLY unwrapArgs] arg[${index}] is function, checking for symbol`);
-							if (FLUENT_HANDLE_SYMBOL in arg) {
-								console.log(`[PROXY APPLY unwrapArgs] arg[${index}] has FLUENT_HANDLE_SYMBOL, unwrapping`);
-								return await arg[FLUENT_HANDLE_SYMBOL];
-							}
-							console.log(`[PROXY APPLY unwrapArgs] arg[${index}] does not have FLUENT_HANDLE_SYMBOL`);
+					argArray.map(async (arg) => {
+						if (typeof arg === 'function' && FLUENT_HANDLE_SYMBOL in arg) {
+							return await arg[FLUENT_HANDLE_SYMBOL];
 						}
 						return arg;
 					})
