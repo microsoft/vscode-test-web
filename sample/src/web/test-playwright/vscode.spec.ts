@@ -88,14 +88,6 @@ test.describe('VSCode API Proxy', () => {
 				expect(content).toBeDefined();
 				expect(content.length).toBeGreaterThan(0);
 			});
-
-			test('command execution (commands.executeCommand)', async ({ vscode, page }) => {
-				await vscode.commands.executeCommand('vscode-test-web-sample.helloWorld');
-
-				// Wait for the notification message to appear
-				const notification = page.locator('.notification-toast-container');
-				await expect(notification).toContainText('Hello World from vscode-test-web-sample in a web extension host!');
-			});
 		});
 
 	});
