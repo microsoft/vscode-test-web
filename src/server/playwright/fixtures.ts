@@ -116,8 +116,6 @@ export const test = base.extend<VSCodeFixtures>({
 
 		const vscodeProxy: VSCode = await createVSCodeProxy(extensionHostWorker);
 		await use(vscodeProxy);
-
-		// TODO: Cleanup handles if needed
 	}
 });
 
