@@ -7,6 +7,11 @@ import type { Worker, JSHandle } from '@playwright/test';
 import type { FluentJSHandle, VSCode } from './vscode-types';
 
 /**
+ * Symbol used to identify and access the underlying JSHandle from a FluentJSHandle proxy.
+ */
+const FLUENT_HANDLE_SYMBOL = Symbol('fluentJSHandle');
+
+/**
  * Creates a proxy that provides fluent access to the VSCode API running in the extension host worker.
  *
  * The proxy uses Playwright's worker.evaluateHandle() to access the real vscode global in the worker,
@@ -135,6 +140,12 @@ function createFluentJSHandle<T>(
 		get(_target, prop: string | symbol) {
 			console.log(`[PROXY GET] prop=${String(prop)}, in jsHandleMembers=${prop in jsHandleMembers}`);
 
+			// Expose the underlying handle promise via symbol
+			if (prop === FLUENT_HANDLE_SYMBOL) {
+				console.log('[PROXY GET] Returning handlePromise for FLUENT_HANDLE_SYMBOL');
+				return handlePromise;
+			}
+
 			// Return undefined for 'then' to prevent being treated as thenable
 			if (prop === 'then') {
 				console.log('[PROXY GET] Returning undefined for then');
@@ -184,28 +195,51 @@ function createFluentJSHandle<T>(
 			console.log(`[PROXY APPLY] parentHandlePromise=${!!parentHandlePromise}, propertyName=${propertyName}, args.length=${argArray.length}`);
 			console.log(`[PROXY APPLY] args types:`, argArray.map(a => typeof a));
 
+			// Unwrap any FluentJSHandle proxies in arguments to get underlying JSHandles
+			const unwrapArgs = async () => {
+				console.log('[PROXY APPLY unwrapArgs] Starting to unwrap args');
+				return await Promise.all(
+					argArray.map(async (arg, index) => {
+						console.log(`[PROXY APPLY unwrapArgs] arg[${index}] type=${typeof arg}`);
+						if (typeof arg === 'function') {
+							console.log(`[PROXY APPLY unwrapArgs] arg[${index}] is function, checking for symbol`);
+							if (FLUENT_HANDLE_SYMBOL in arg) {
+								console.log(`[PROXY APPLY unwrapArgs] arg[${index}] has FLUENT_HANDLE_SYMBOL, unwrapping`);
+								return await arg[FLUENT_HANDLE_SYMBOL];
+							}
+							console.log(`[PROXY APPLY unwrapArgs] arg[${index}] does not have FLUENT_HANDLE_SYMBOL`);
+						}
+						return arg;
+					})
+				);
+			};
+
 			// If we have parent + propertyName, invoke via parent to preserve 'this' binding
 			// getProperty() returns a handle to the function itself, but loses the 'this' binding.
 			// To preserve 'this', we must invoke the method via the parent object.
 			if (parentHandlePromise && propertyName) {
 				return createFluentJSHandle(
-					parentHandlePromise.then(parent =>
-						parent.evaluateHandle((obj: any, params: { methodName: string; args: any[] }) => {
-							return obj[params.methodName](...params.args);
-						}, { methodName: propertyName, args: argArray })
+					unwrapArgs().then(unwrappedArgs =>
+						parentHandlePromise.then(parent =>
+							parent.evaluateHandle((obj: any, params: { methodName: string; args: any[] }) => {
+								return obj[params.methodName](...params.args);
+							}, { methodName: propertyName, args: unwrappedArgs })
+						)
 					)
 				);
 			}
 
 			// Fallback: direct invocation (for root-level functions or when no parent context)
 			return createFluentJSHandle(
-				handlePromise.then(handle => {
-					const fnHandle = handle as unknown as JSHandle<(...args: any[]) => any>;
+				unwrapArgs().then(unwrappedArgs =>
+					handlePromise.then(handle => {
+						const fnHandle = handle as unknown as JSHandle<(...args: any[]) => any>;
 
-					return fnHandle.evaluateHandle((fn: (...args: any[]) => any, args: any[]) => {
-						return fn(...args);
-					}, argArray)
-				})
+						return fnHandle.evaluateHandle((fn: (...args: any[]) => any, args: any[]) => {
+							return fn(...args);
+						}, unwrappedArgs)
+					})
+				)
 			);
 		}
 	});

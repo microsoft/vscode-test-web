@@ -28,11 +28,8 @@ test.describe('VSCode API Proxy', () => {
 
 		test.describe('JSHandle methods', () => {
 			test('jsonValue() on root handle', async ({ vscode }) => {
-				console.log('[TEST] Accessing vscode.jsonValue');
 				const jsonValueMethod = vscode.jsonValue;
-				console.log('[TEST] Got jsonValueMethod:', typeof jsonValueMethod);
 				const value = await jsonValueMethod();
-				console.log('[TEST] Got value:', typeof value);
 				expect(value).toBeDefined();
 			});
 
@@ -72,25 +69,22 @@ test.describe('VSCode API Proxy', () => {
 			});
 
 			test('instance method with this binding (Uri.joinPath)', async ({ vscode }) => {
-				const folders = await vscode.workspace.workspaceFolders.jsonValue();
-				expect(folders).toBeDefined();
-				expect(folders!.length).toBeGreaterThan(0);
-				const value = await vscode.Uri.joinPath(folders![0].uri, 'test.txt').jsonValue();
+				const value = await vscode.Uri.joinPath(vscode.workspace.workspaceFolders[0].uri, 'test.txt').jsonValue();
 				expect(value.path).toContain('test.txt');
 			});
 
 			test('nested method (workspace.fs.stat)', async ({ vscode }) => {
-				const folders = await vscode.workspace.workspaceFolders.jsonValue();
-				const fileUri = await vscode.Uri.joinPath(folders![0].uri, 'hello.txt').jsonValue();
-				const stats = await vscode.workspace.fs.stat(fileUri).jsonValue();
+				const stats = await vscode.workspace.fs.stat(
+					vscode.Uri.joinPath(vscode.workspace.workspaceFolders[0].uri, 'hello.txt')
+				).jsonValue();
 				expect(stats).toHaveProperty('type');
 				expect(stats).toHaveProperty('size');
 			});
 
 			test('nested method (workspace.fs.readFile)', async ({ vscode }) => {
-				const folders = await vscode.workspace.workspaceFolders.jsonValue();
-				const fileUri = await vscode.Uri.joinPath(folders![0].uri, 'hello.txt').jsonValue();
-				const content = await vscode.workspace.fs.readFile(fileUri).jsonValue();
+				const content = await vscode.workspace.fs.readFile(
+					vscode.Uri.joinPath(vscode.workspace.workspaceFolders[0].uri, 'hello.txt')
+				).jsonValue();
 				expect(content).toBeDefined();
 				expect(content.length).toBeGreaterThan(0);
 			});
