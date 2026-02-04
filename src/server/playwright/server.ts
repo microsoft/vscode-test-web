@@ -160,7 +160,7 @@ export async function startVSCodeServer(options: StartServerOptions = {}): Promi
 		extensionPaths: options.extensionPaths,
 		extensionIds: options.extensionIds,
 		coi: options.coi ?? false,
-		esm: options.esm ?? false,
+		esm: options.esm,  // Let undefined pass through so workbench.ts can auto-detect from package.json
 	};
 
 	const host = options.host ?? 'localhost';

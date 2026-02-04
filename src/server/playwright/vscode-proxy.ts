@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import type { Worker, JSHandle } from '@playwright/test';
+import type { FluentJSHandle, VSCode } from './vscode-types';
 
 /**
  * Creates a proxy that provides fluent access to the VSCode API running in the extension host worker.
@@ -25,7 +26,7 @@ import type { Worker, JSHandle } from '@playwright/test';
  * const content = await vscode.workspace.fs.readFile(uri);
  * ```
  */
-export async function createVSCodeProxy(worker: Worker): Promise<any> {
+export async function createVSCodeProxy(worker: Worker): Promise<VSCode> {
 	// Wait for the bridge to initialize and expose the vscode API
 	// The bridge module (loaded via extensionTestsPath) exposes this global
 	const vscodeHandle = await worker.evaluateHandle(async () => {
@@ -34,122 +35,130 @@ export async function createVSCodeProxy(worker: Worker): Promise<any> {
 		const pollInterval = 100; // 100ms
 		const startTime = Date.now();
 
-		while (!((globalThis as any).__vscodeApiForPlaywright)) {
+		while (!(globalThis.__vscodeApiForPlaywright)) {
 			if (Date.now() - startTime > maxWaitTime) {
 				throw new Error('Timeout waiting for VSCode API to be exposed by bridge');
 			}
 			await new Promise(resolve => setTimeout(resolve, pollInterval));
 		}
 
-		return (globalThis as any).__vscodeApiForPlaywright;
+		return globalThis.__vscodeApiForPlaywright as typeof import('vscode');
 	});
 
 	// Create the root proxy wrapping the vscode handle
-	return createProxiedPromise(vscodeHandle);
+	return createFluentJSHandle(vscodeHandle) as VSCode;
 }
 
+// Derive the expected member type from the actual JSHandle interface
+type JSHandleMemberTypes = {
+  readonly [K in keyof JSHandle]: JSHandle[K] extends (...args: any[]) => any
+    ? 'function'
+    : 'property'
+};
+
+// Define the constant with satisfies to catch missing keys and wrong value types
+const jsHandleMembers = {
+  evaluate: 'function',
+  evaluateHandle: 'function',
+  jsonValue: 'function',
+  asElement: 'function',
+  dispose: 'function',
+  getProperties: 'function',
+  getProperty: 'function',
+  [Symbol.asyncDispose]: 'function',
+} as const satisfies JSHandleMemberTypes;
+
 /**
- * Creates a proxy that wraps a Promise<JSHandle> and allows both property access and awaiting.
+ * Creates a proxy that exposes a JSHandle with fluent property access.
  *
- * Key behaviors:
- * - Property access returns a new proxied promise (enables chaining)
- * - Accessing 'then' makes it awaitable (Promise interface)
- * - Method calls (with arguments) invoke the method and return proxied result
- * - Final await evaluates and serializes the result
+ * The proxy wraps a JSHandle and provides:
+ * - Property access via getProperty() returning a new FluentJSHandle
+ * - Method calls via evaluateHandle() returning a new FluentJSHandle
+ * - All JSHandle methods (jsonValue, evaluate, etc.) forwarded to the underlying handle
+ *
+ * @param promiseOrHandle - The JSHandle or Promise of JSHandle to wrap
+ * @param parentHandlePromise - The parent handle (for method invocation with correct 'this' binding)
+ * @param propertyName - The property name used to access this handle from the parent
  */
-function createProxiedPromise(promiseOrHandle: Promise<JSHandle> | JSHandle): any {
-	// Normalize to promise
-	const promise = promiseOrHandle instanceof Promise
-		? promiseOrHandle
-		: Promise.resolve(promiseOrHandle);
+function createFluentJSHandle<T>(
+  promiseOrHandle: Promise<JSHandle<T>> | JSHandle<T>,
+  parentHandlePromise?: Promise<JSHandle<unknown>>,
+  propertyName?: string
+): FluentJSHandle<T> {
+  // Function target so the proxy can be callable (for function properties).
+  const target = function () {} as any;
 
-	// Create proxy that intercepts property access
-	return new Proxy(function() {}, {
-		// Handle property access and method calls
-		get(target, prop: string | symbol) {
-			// Special handling for 'then' - makes the proxy awaitable
-			if (prop === 'then') {
-				return (
-					onFulfilled?: (value: any) => any,
-					onRejected?: (reason: any) => any
-				) => {
-					return promise
-						.then(async (handle) => {
-							// Serialize the final value
-							return await handle.jsonValue();
+	const handlePromise = Promise.resolve(promiseOrHandle);
+
+	const proxy = new Proxy(target, {
+		// TODO: There are way more functions on ProxyHandler to consider implementing for full coverage.
+
+		// Handle property access
+		get(_target, prop: string | symbol) {
+			// Forward JSHandle methods to the underlying handle
+			if (prop in jsHandleMembers) {
+
+				if (jsHandleMembers[prop] === 'function') {
+					// Cache the function reference after first access
+					// This avoids an edge case where if the property is a getter that returns a new function each time,
+					// calling our returned function multiple times would call the getter multiple times,
+					// returning a new function each time, which would change the semantics.
+					let func: ((...args: any[]) => any) | undefined = undefined;
+
+					return (...args: any[]) =>
+						handlePromise.then(handle => {
+							if (func === undefined) {
+								func = (handle as any)[prop];
+							}
+							if (func !== undefined) {
+								// Apply the function with the handle as 'this'
+								return func.apply(handle, args);
+							}
 						})
-						.then(onFulfilled, onRejected);
-				};
+				} else {
+					return handlePromise.then(handle => (handle as any)[prop]);
+				}
 			}
 
-			// Special handling for 'catch' - makes the proxy catchable
-			if (prop === 'catch') {
-				return (onRejected?: (reason: any) => any) => {
-					return promise
-						.then(async (handle) => {
-							return await handle.jsonValue();
-						})
-						.catch(onRejected);
-				};
+			if (typeof prop === 'symbol') {
+				throw new Error(`Cannot access symbol property ${String(prop)} on FluentJSHandle`);
 			}
 
-			// Special handling for 'finally' - makes the proxy finallable
-			if (prop === 'finally') {
-				return (onFinally?: () => void) => {
-					return promise
-						.then(async (handle) => {
-							return await handle.jsonValue();
-						})
-						.finally(onFinally);
-				};
-			}
-
-			// For any other property/method access, return a function that can be:
-			// 1. Called as a method (with arguments)
-			// 2. Accessed as a property (no arguments)
-			return (...args: any[]) => {
-				const nextPromise = promise.then(async (handle) => {
-					if (args.length > 0) {
-						// Method call - invoke the method with arguments
-						return await handle.evaluateHandle(
-							(obj: any, { prop, args }: any) => {
-								const method = obj[prop];
-								if (typeof method !== 'function') {
-									throw new Error(`${String(prop)} is not a function`);
-								}
-								return method.apply(obj, args);
-							},
-							{ prop, args }
-						);
-					} else {
-						// Property access - get the property value
-						return await handle.evaluateHandle(
-							(obj: any, prop: any) => obj[prop],
-							prop
-						);
-					}
-				});
-
-				// Return a new proxied promise for chaining
-				return createProxiedPromise(nextPromise);
-			};
+			// Pass current handle as parent and prop as property name for correct 'this' binding
+			return createFluentJSHandle(
+				handlePromise.then(handle => handle.getProperty(prop)),
+				handlePromise,
+				prop
+			);
 		},
 
-		// Handle direct calls to the proxy (e.g., treating namespace as callable)
-		apply(target, thisArg, args: any[]) {
-			const nextPromise = promise.then(async (handle) => {
-				return await handle.evaluateHandle(
-					(fn: any, args: any) => {
-						if (typeof fn !== 'function') {
-							throw new Error('Cannot call non-function');
-						}
-						return fn(...args);
-					},
-					args
+		// Handle function calls
+		apply(_target, _thisArg, argArray: any[]) {
+			// If we have parent + propertyName, invoke via parent to preserve 'this' binding
+			// getProperty() returns a handle to the function itself, but loses the 'this' binding.
+			// To preserve 'this', we must invoke the method via the parent object.
+			if (parentHandlePromise && propertyName) {
+				return createFluentJSHandle(
+					parentHandlePromise.then(parent =>
+						parent.evaluateHandle((obj: any, params: { methodName: string; args: any[] }) => {
+							return obj[params.methodName](...params.args);
+						}, { methodName: propertyName, args: argArray })
+					)
 				);
-			});
+			}
 
-			return createProxiedPromise(nextPromise);
+			// Fallback: direct invocation (for root-level functions or when no parent context)
+			return createFluentJSHandle(
+				handlePromise.then(handle => {
+					const fnHandle = handle as unknown as JSHandle<(...args: any[]) => any>;
+
+					return fnHandle.evaluateHandle((fn: (...args: any[]) => any, args: any[]) => {
+						return fn(...args);
+					}, argArray)
+				})
+			);
 		}
 	});
+
+	return proxy as FluentJSHandle<T>;
 }

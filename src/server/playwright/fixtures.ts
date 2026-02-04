@@ -57,6 +57,10 @@ export const test = base.extend<VSCodeFixtures>({
 	 * 5. Returns the proxy with Promisified types for fluent API usage
 	 */
 	vscode: async ({ page }, use) => {
+		// Navigate to VSCode and wait for workbench to load
+		await page.goto('/');
+		await page.locator('.monaco-workbench').waitFor({ timeout: 30000 });
+
 		// Wait for the extension host worker to be created
 		// The extension host is where the vscode global API lives
 		// Extension host worker name is defined by VSCode in
@@ -65,37 +69,52 @@ export const test = base.extend<VSCodeFixtures>({
 
 		let extensionHostWorker: Worker | null = null;
 
-		// Listen for all workers and check their name
-		const workerHandler = async (w: Worker) => {
+		// Helper to check if a worker is the extension host
+		const checkWorker = async (w: Worker): Promise<boolean> => {
 			try {
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				// @ts-ignore - self is available in worker context
+				// @ts-expect-error - self is available in worker context
 				const workerName = await w.evaluate(() => (self as any).name);
 				if (workerName === 'ExtensionHostWorker') {
 					extensionHostWorker = w;
+					return true;
 				}
 			} catch (e) {
 				// Worker might be closing, ignore
 			}
+			return false;
 		};
 
-		page.on('worker', workerHandler);
-
-		// Wait for the extension host worker to be found
-		const startTime = Date.now();
-		const timeout = 30000;
-
-		while (!extensionHostWorker && (Date.now() - startTime) < timeout) {
-			await new Promise(resolve => setTimeout(resolve, 100));
+		// First check existing workers
+		for (const worker of page.workers()) {
+			if (await checkWorker(worker)) {
+				break;
+			}
 		}
 
-		page.off('worker', workerHandler);
+		// If not found, listen for new workers
+		if (!extensionHostWorker) {
+			const workerHandler = async (w: Worker) => {
+				await checkWorker(w);
+			};
+
+			page.on('worker', workerHandler);
+
+			// Wait for the extension host worker to be found
+			const startTime = Date.now();
+			const timeout = 30000;
+
+			while (!extensionHostWorker && (Date.now() - startTime) < timeout) {
+				await new Promise(resolve => setTimeout(resolve, 100));
+			}
+
+			page.off('worker', workerHandler);
+		}
 
 		if (!extensionHostWorker) {
 			throw new Error('Extension host worker not found within timeout');
 		}
 
-		const vscodeProxy = await createVSCodeProxy(extensionHostWorker);
+		const vscodeProxy: VSCode = await createVSCodeProxy(extensionHostWorker);
 		await use(vscodeProxy);
 
 		// TODO: Cleanup handles if needed

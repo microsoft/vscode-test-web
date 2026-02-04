@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../playwright"
+		}
+	],
+	"settings": {
+		"githubPullRequests.assignCreated": "${user}",
+		"githubPullRequests.defaultMergeMethod": "squash"
+	}
+}

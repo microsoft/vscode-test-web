@@ -23,6 +23,6 @@
 
 export { test, expect } from './fixtures';
 export { createVSCodeProxy } from './vscode-proxy';
-export type { VSCode, VSCodeAPI, Promisify } from './vscode-types';
+export type { VSCode, FluentJSHandle } from './vscode-types';
 export type { VSCodeFixtures } from './fixtures';
 export { startVSCodeServer, type StartServerOptions, type VSCodeServerInfo } from './server';
