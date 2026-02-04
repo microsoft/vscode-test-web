@@ -11,12 +11,20 @@
  *
  * @example
  * ```typescript
- * import { test, expect, startVSCodeServer } from '@vscode/test-web/playwright';
+ * import { test, expect } from '@vscode/test-web/playwright';
  *
  * test('workspace folders', async ({ vscode }) => {
- *   const folders = await vscode.workspace.workspaceFolders;
+ *   const folders = await vscode.workspace.workspaceFolders.jsonValue();
  *   expect(folders).toBeDefined();
  *   expect(folders.length).toBeGreaterThan(0);
+ * });
+ *
+ * test('command execution with notification', async ({ vscode, page }) => {
+ *   await vscode.commands.executeCommand('myExtension.helloWorld');
+ *
+ *   // Wait for the notification message to appear
+ *   const notification = page.locator('.notification-toast-container');
+ *   await expect(notification).toContainText('Hello World');
  * });
  * ```
  */
