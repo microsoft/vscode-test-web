@@ -33,7 +33,7 @@ export async function getDownloadURL(quality: 'stable' | 'insider', commit: stri
 				resolve(undefined);
 			}
 			res.resume(); // Discard response body
-		});
+		}).on('error', reject);
 	});
 }
 
@@ -82,7 +82,7 @@ async function downloadAndUntar(downloadUrl: string, destination: string, messag
 				resolve();
 			});
 			extract.on('error', reject);
-		});
+		}).on('error', reject);
 	});
 }
 
@@ -156,10 +156,8 @@ export async function fetch(api: string): Promise<string> {
 				resolve(data);
 			});
 
-			res.on('error', err => {
-				reject(err);
-			});
-		});
+			res.on('error', reject);
+		}).on('error', reject);
 	});
 }
 
