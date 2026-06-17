@@ -48,5 +48,8 @@
 	},
 	"dependencies": {
 		"@vscode/test-web": "file:.."
+	},
+	"overrides": {
+		"serialize-javascript": ">=7.0.5"
 	}
 }
