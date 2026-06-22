@@ -76,7 +76,7 @@ async function downloadAndUntar(downloadUrl: string, destination: string, messag
 				process.stdout.write(`${reset}${message}: complete\n`);
 			});
 
-			const extract = res.pipe(gunzip()).pipe(tar.extract(destination, { strip: 1 }));
+			const extract = res.pipe(gunzip.default()).pipe(tar.extract(destination, { strip: 1 }));
 			extract.on('finish', () => {
 				process.stdout.write(`Extracted to ${destination}\n`);
 				resolve();
