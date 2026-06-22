@@ -4,11 +4,11 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { ReadStream } from 'fs';
-import * as Koa from 'koa';
-import * as morgan from 'koa-morgan';
-import * as kstatic from 'koa-static';
-import * as kmount from 'koa-mount';
-import * as cors from '@koa/cors';
+import Koa from 'koa';
+import morgan from 'koa-morgan';
+import kstatic from 'koa-static';
+import kmount from 'koa-mount';
+import cors from '@koa/cors';
 import { basename, join } from 'path';
 import { IConfig } from './main';
 import workbench from './workbench';

@@ -5,6 +5,11 @@
 		"lib": [
 			"ES2022", "WebWorker"
 		],
+		"types": [
+			"node",
+			"mocha",
+			"webpack-env"
+		],
 		"rootDir": "src",
 		"strict": true   /* enable all strict type-checking options */
 		/* Additional Checks */

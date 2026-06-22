@@ -5,9 +5,9 @@
 
 import { IConfig } from './main';
 
-import * as Koa from 'koa';
-import * as kstatic from 'koa-static';
-import * as kmount from 'koa-mount';
+import Koa from 'koa';
+import kstatic from 'koa-static';
+import kmount from 'koa-mount';
 import Router, { RouterMiddleware } from '@koa/router';
 
 import { Dirent, promises as fs, Stats } from 'fs';

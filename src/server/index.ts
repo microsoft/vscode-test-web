@@ -10,7 +10,7 @@ import { IConfig, runServer, Static, Sources } from './main';
 import { downloadAndUnzipVSCode, directoryExists, fileExists, readFileInRepo } from './download';
 
 import * as playwright from 'playwright';
-import * as minimist from 'minimist';
+import minimist, { type Opts } from 'minimist';
 import * as path from 'path';
 
 export type BrowserType = 'chromium' | 'firefox' | 'webkit' | 'none';
@@ -617,7 +617,7 @@ async function cliMain(): Promise<void> {
 	const manifest = JSON.parse(await readFileInRepo('package.json'));
 	console.log(`${manifest.name}: ${manifest.version}`);
 
-	const options: minimist.Opts = {
+	const options: Opts = {
 		string: ['extensionDevelopmentPath', 'extensionTestsPath', 'browser', 'browserOption', 'browserType', 'quality', 'version', 'commit', 'waitForDebugger', 'folder-uri', 'permission', 'extensionPath', 'extensionId', 'sourcesPath', 'host', 'port', 'testRunnerDataDir'],
 		boolean: ['open-devtools', 'headless', 'hideServerLog', 'printServerLog', 'help', 'verbose', 'coi', 'esm'],
 		default: {
