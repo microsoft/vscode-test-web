@@ -45,7 +45,7 @@
 		"path-browserify": "^1.0.1",
 		"process": "^0.11.10",
 		"request-light": "^0.8.0",
-		"ts-loader": "^9.6.2",
+		"ts-loader": "^9.6.1",
 		"vscode-uri": "^3.1.0",
 		"webpack": "^5.107.2",
 		"webpack-cli": "^7.0.3"
