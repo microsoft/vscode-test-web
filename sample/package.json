@@ -51,6 +51,7 @@
 		"@vscode/test-web": "file:.."
 	},
 	"overrides": {
+		"diff": "9.0.0",
 		"serialize-javascript": ">=7.0.5"
 	}
 }
