@@ -24,6 +24,7 @@ parameters:
 extends:
   template: azure-pipelines/npm-package/pipeline.yml@templates
   parameters:
+    cgIgnoreDirectories: '**/.vscode-test-web/**'
     npmPackages:
       - name: test-web
 
