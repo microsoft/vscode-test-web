@@ -1,6 +1,15 @@
 // imports mocha for the browser, defining the `mocha` global.
 require('mocha/mocha');
 
+interface RequireContext {
+	keys(): string[];
+	(id: string): unknown;
+}
+
+interface WebpackRequire {
+	context(path: string, deep?: boolean, filter?: RegExp): RequireContext;
+}
+
 export function run(): Promise<void> {
 
 	return new Promise((c, e) => {
@@ -10,8 +19,8 @@ export function run(): Promise<void> {
 		});
 
 		// bundles all files in the current directory matching `*.test`
-		const importAll = (r: __WebpackModuleApi.RequireContext) => r.keys().forEach(r);
-		importAll(require.context('.', true, /\.test$/));
+		const importAll = (r: RequireContext) => r.keys().forEach(r);
+		importAll((require as unknown as WebpackRequire).context('.', true, /\.test$/));
 
 		try {
 			// Run the mocha test
