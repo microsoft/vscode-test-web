@@ -18,6 +18,7 @@
 
 		<!-- Workbench Configuration -->
 		<meta id="vscode-workbench-web-configuration" data-settings="{{WORKBENCH_WEB_CONFIGURATION}}">
+		<meta id="vscode-workbench-web-base-url" data-settings="{{WORKBENCH_WEB_BASE_URL}}">
 
 		<!-- Builtin Extensions (running out of sources) -->
 		<meta id="vscode-workbench-builtin-extensions" data-settings="{{WORKBENCH_BUILTIN_EXTENSIONS}}">
@@ -36,7 +37,7 @@
 	<!-- Startup (do not modify order of script tags!) -->
 	<script>
 		// BASE URL
-		const baseUrl = new URL('{{WORKBENCH_WEB_BASE_URL}}', window.location.origin).toString();
+		const baseUrl = new URL(document.getElementById('vscode-workbench-web-base-url').getAttribute('data-settings'), window.location.origin).toString();
 		globalThis._VSCODE_FILE_ROOT = baseUrl + '/out/';
 	</script>
 	<script>

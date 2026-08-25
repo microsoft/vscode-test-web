@@ -29,7 +29,32 @@ interface IWorkbenchOptions {
 }
 
 function asJSON(value: unknown): string {
-	return JSON.stringify(value).replace(/"/g, '&quot;');
+	return JSON.stringify(value);
+}
+
+/**
+ * Encodes a value so it can be used as a literal value in a quoted HTML attribute.
+ */
+function htmlAttributeEncodeValue(value: string): string {
+	return value.replace(/[<>"'&]/g, ch => {
+		switch (ch) {
+			case '<': return '&lt;';
+			case '>': return '&gt;';
+			case '"': return '&quot;';
+			case '\'': return '&apos;';
+			case '&': return '&amp;';
+		}
+		return ch;
+	});
+}
+
+/**
+ * Returns whether the value is a plain HTTP authority, as a `Host` header is required to be.
+ * The authority ends up in the base URL, which is embedded into markup and into the module
+ * specifier of the workbench entry point.
+ */
+export function isValidHost(host: string): boolean {
+	return /^(?:\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9._-]+)(?::[0-9]+)?$/.test(host);
 }
 
 class Workbench {
@@ -39,16 +64,22 @@ class Workbench {
 		if (this.productOverrides) {
 			workbenchWebConfiguration.productConfiguration = { ...workbenchWebConfiguration.productConfiguration, ...this.productOverrides };
 		}
+		// Substituted into quoted HTML attributes and therefore encoded.
 		const values: { [key: string]: string } = {
 			WORKBENCH_WEB_CONFIGURATION: asJSON(workbenchWebConfiguration),
 			WORKBENCH_WEB_BASE_URL: this.baseUrl,
-			WORKBENCH_BUILTIN_EXTENSIONS: asJSON(this.builtInExtensions),
+			WORKBENCH_BUILTIN_EXTENSIONS: asJSON(this.builtInExtensions)
+		};
+		// Server generated markup, which must be substituted verbatim.
+		const rawValues: { [key: string]: string } = {
 			WORKBENCH_MAIN: await this.getMain()
 		};
 
 		try {
 			const workbenchTemplate = await readFileInRepo(`views/workbench${this.esm ? '-esm' : ''}.html`);
-			return workbenchTemplate.replace(/\{\{([^}]+)\}\}/g, (_, key) => values[key] ?? 'undefined');
+			return workbenchTemplate.replace(/\{\{([^}]+)\}\}/g, (_, key) => {
+				return key in rawValues ? rawValues[key] : htmlAttributeEncodeValue(values[key] ?? 'undefined');
+			});
 		} catch (e) {
 			return String(e);
 		}
@@ -56,6 +87,10 @@ class Workbench {
 
 	async getMain() {
 		const lines: string[] = [];
+		const attributeBaseUrl = htmlAttributeEncodeValue(this.baseUrl);
+		// Percent encoding leaves a well formed base URL untouched while keeping a malformed one
+		// from breaking out of the quoted module specifier it is substituted into.
+		const moduleBaseUrl = this.baseUrl.replace(/['"\\\r\n]/g, encodeURIComponent);
 		if (this.esm) {
 			let workbenchMain = await readFileInRepo(`out/browser/esm/main.js`);
 			if (this.dev) {
@@ -76,15 +111,14 @@ class Workbench {
 					"}",
 					"const importMapElement = document.createElement('script');",
 					"importMapElement.type = 'importmap';",
-					"importMapElement.setAttribute('nonce', '1nline-m4p');",
 					"importMapElement.textContent = JSON.stringify(importMap, undefined, 2);",
 					"document.head.appendChild(importMapElement);",
 					"</script>");
-				workbenchMain = workbenchMain.replace('./workbench.api', `${this.baseUrl}/out/vs/workbench/workbench.web.main.internal.js`);
+				workbenchMain = workbenchMain.replace('./workbench.api', `${moduleBaseUrl}/out/vs/workbench/workbench.web.main.internal.js`);
 				lines.push(`<script type="module">${workbenchMain}</script>`);
 			} else {
-				workbenchMain = workbenchMain.replace('./workbench.api', `${this.baseUrl}/out/vs/workbench/workbench.web.main.internal.js`);
-				lines.push(`<script src="${this.baseUrl}/out/nls.messages.js"></script>`);
+				workbenchMain = workbenchMain.replace('./workbench.api', `${moduleBaseUrl}/out/vs/workbench/workbench.web.main.internal.js`);
+				lines.push(`<script src="${attributeBaseUrl}/out/nls.messages.js"></script>`);
 				lines.push(`<script type="module">${workbenchMain}</script>`);
 			}
 			return lines.join('\n');
@@ -95,9 +129,9 @@ class Workbench {
 			if (this.dev) {
 
 			} else {
-				lines.push(`<script src="${this.baseUrl}/out/nls.messages.js"></script>`);
-				lines.push(`<script src="${this.baseUrl}/out/vs/workbench/workbench.web.main.nls.js"></script>`);
-				lines.push(`<script src="${this.baseUrl}/out/vs/workbench/workbench.web.main.js"></script>`);
+				lines.push(`<script src="${attributeBaseUrl}/out/nls.messages.js"></script>`);
+				lines.push(`<script src="${attributeBaseUrl}/out/vs/workbench/workbench.web.main.nls.js"></script>`);
+				lines.push(`<script src="${attributeBaseUrl}/out/vs/workbench/workbench.web.main.js"></script>`);
 			}
 			lines.push(`<script>${workbenchMain}</script>`);
 		}
@@ -176,6 +210,11 @@ export default function (config: IConfig): RouterMiddleware {
 	const router = new Router<{ workbench: Workbench }>();
 
 	router.use(async (ctx, next) => {
+		if (!isValidHost(ctx.host)) {
+			ctx.status = 400;
+			ctx.body = 'Bad request.';
+			return;
+		}
 		if (config.build.type === 'sources') {
 			const builtInExtensions = await getScannedBuiltinExtensions(config.build.location);
 			const productOverrides = await getProductOverrides(config.build.location);

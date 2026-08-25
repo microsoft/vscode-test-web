@@ -18,6 +18,7 @@
 
 		<!-- Workbench Configuration -->
 		<meta id="vscode-workbench-web-configuration" data-settings="{{WORKBENCH_WEB_CONFIGURATION}}">
+		<meta id="vscode-workbench-web-base-url" data-settings="{{WORKBENCH_WEB_BASE_URL}}">
 
 		<!-- Builtin Extensions (running out of sources) -->
 		<meta id="vscode-workbench-builtin-extensions" data-settings="{{WORKBENCH_BUILTIN_EXTENSIONS}}">
@@ -35,7 +36,7 @@
 	<script src="{{WORKBENCH_WEB_BASE_URL}}/out/vs/loader.js"></script>
 	<script src="{{WORKBENCH_WEB_BASE_URL}}/out/vs/webPackagePaths.js"></script>
 	<script>
-		let baseUrl = '{{WORKBENCH_WEB_BASE_URL}}';
+		let baseUrl = document.getElementById('vscode-workbench-web-base-url').getAttribute('data-settings');
 		if (!self.webPackagePaths) {
 			self.webPackagePaths = {};
 		} else {
