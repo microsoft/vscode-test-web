@@ -47,7 +47,14 @@ export interface IServer {
 export async function runServer(host: string, port: number | undefined, config: IConfig): Promise<IServer> {
 	const app = await createApp(config);
 	try {
-		const server = app.listen(port, host);
+		const server = await new Promise<ReturnType<typeof app.listen>>((resolve, reject) => {
+			const server = app.listen(port, host);
+			server.once('error', reject);
+			server.once('listening', () => {
+				server.removeListener('error', reject);
+				resolve(server);
+			});
+		});
 		console.log(`Listening on http://${host}:${port}`);
 		return server;
 	} catch (e) {
